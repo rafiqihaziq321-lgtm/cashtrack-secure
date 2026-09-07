@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SaleController;
 
 Route::view('/', 'welcome')->name('home');
 
@@ -36,6 +37,12 @@ Route::middleware(['auth', 'role:Owner'])->group(function () {
 Route::middleware(['auth', 'role:Cashier'])->group(function () {
     Route::get('/cashier/dashboard', [DashboardController::class, 'cashier'])
         ->name('cashier.dashboard');
+
+    Route::get('/cashier/sales/create', [SaleController::class, 'create'])
+        ->name('cashier.sales.create');
+
+    Route::post('/cashier/sales', [SaleController::class, 'store'])
+        ->name('cashier.sales.store');
 });
 
 require __DIR__.'/settings.php';
