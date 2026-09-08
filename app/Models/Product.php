@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+
 class Product extends Model
 {
     protected $fillable = [
@@ -32,5 +33,10 @@ class Product extends Model
     public function inventoryMovements(): HasMany
     {
         return $this->hasMany(InventoryMovement::class);
+    }
+
+    public function stockCounts(): HasMany
+    {
+        return $this->hasMany(StockCount::class);
     }
 }

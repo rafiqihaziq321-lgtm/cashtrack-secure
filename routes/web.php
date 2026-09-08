@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\StockCountController;
+use App\Http\Controllers\StockInController;
 
 Route::view('/', 'welcome')->name('home');
 
@@ -32,6 +34,21 @@ Route::middleware(['auth', 'role:Owner'])->group(function () {
 
     Route::patch('/owner/products/{product}/deactivate', [ProductController::class, 'deactivate'])
         ->name('owner.products.deactivate');
+
+    Route::get('/owner/stock-counts', [StockCountController::class, 'index'])
+        ->name('owner.stock-counts.index');
+
+    Route::get('/owner/stock-counts/create', [StockCountController::class, 'create'])
+        ->name('owner.stock-counts.create');
+
+    Route::post('/owner/stock-counts', [StockCountController::class, 'store'])
+        ->name('owner.stock-counts.store');
+
+    Route::get('/owner/stock-in/create', [StockInController::class, 'create'])
+        ->name('owner.stock-in.create');
+
+    Route::post('/owner/stock-in', [StockInController::class, 'store'])
+        ->name('owner.stock-in.store');
 });
 
 Route::middleware(['auth', 'role:Cashier'])->group(function () {
@@ -45,4 +62,4 @@ Route::middleware(['auth', 'role:Cashier'])->group(function () {
         ->name('cashier.sales.store');
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';
