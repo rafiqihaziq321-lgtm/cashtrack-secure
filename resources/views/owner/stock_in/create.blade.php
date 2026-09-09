@@ -1,80 +1,87 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Stock In - CashTrack Secure</title>
-</head>
-<body>
+@extends('layouts.owner')
 
-    <h1>CashTrack Secure</h1>
-    <h2>Stock In</h2>
+@section('title', 'Stock In - CashTrack Secure')
 
-    @if(session('success'))
-        <p>{{ session('success') }}</p>
-    @endif
+@section('content')
 
-    @if($errors->any())
-        <ul>
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    @endif
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">Stock In</h2>
+    <p class="text-muted mb-0">
+        Record incoming inventory into the inventory ledger.
+    </p>
+</div>
 
-    <form method="POST"
-          action="{{ route('owner.stock-in.store') }}">
+<div class="card content-card shadow-sm">
+    <div class="card-body p-4">
 
-        @csrf
+        <form method="POST"
+              action="{{ route('owner.stock-in.store') }}">
 
-        <div>
-            <label>Product</label>
+            @csrf
 
-            <select name="product_id" required>
-                <option value="">-- Select Product --</option>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Product
+                </label>
 
-                @foreach($products as $product)
-                    <option value="{{ $product->id }}">
-                        {{ $product->sku }} - {{ $product->name }}
+                <select name="product_id"
+                        class="form-select"
+                        required>
+
+                    <option value="">
+                        -- Select Product --
                     </option>
-                @endforeach
-            </select>
-        </div>
 
-        <br>
+                    @foreach($products as $product)
+                        <option
+                            value="{{ $product->id }}"
+                            @selected(old('product_id') == $product->id)
+                        >
+                            {{ $product->sku }} - {{ $product->name }}
+                        </option>
+                    @endforeach
 
-        <div>
-            <label>Quantity</label>
+                </select>
+            </div>
 
-            <input
-                type="number"
-                name="quantity"
-                min="1"
-                required
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Quantity
+                </label>
+
+                <input
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    value="{{ old('quantity') }}"
+                    class="form-control"
+                    required
+                >
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">
+                    Notes
+                </label>
+
+                <textarea
+                    name="notes"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Example: Supplier delivery"
+                >{{ old('notes') }}</textarea>
+            </div>
+
+            <button
+                type="submit"
+                class="btn btn-dark"
             >
-        </div>
+                Record Stock In
+            </button>
 
-        <br>
+        </form>
 
-        <div>
-            <label>Notes</label>
+    </div>
+</div>
 
-            <textarea name="notes"
-                      placeholder="Example: Opening stock"></textarea>
-        </div>
-
-        <br>
-
-        <button type="submit">
-            Record Stock In
-        </button>
-
-    </form>
-
-    <br>
-
-    <a href="{{ route('owner.stock-counts.create') }}">
-        Go to Stock Count
-    </a>
-
-</body>
-</html>
+@endsection

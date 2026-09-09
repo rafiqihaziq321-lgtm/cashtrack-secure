@@ -1,89 +1,125 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Stock Count History - CashTrack Secure</title>
-</head>
+@extends('layouts.owner')
 
-<body>
+@section('title', 'Stock Count History - CashTrack Secure')
 
-    <h1>CashTrack Secure</h1>
+@section('content')
 
-    <h2>Stock Count History</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
 
-    @if(session('success'))
-        <p>{{ session('success') }}</p>
-    @endif
+    <div>
+        <h2 class="fw-bold mb-1">Stock Count History</h2>
 
-    <p>
-        <a href="{{ route('owner.stock-counts.create') }}">
-            + New Stock Count
-        </a>
-    </p>
+        <p class="text-muted mb-0">
+            Historical expected versus physical inventory counts.
+        </p>
+    </div>
 
-    <table border="1" cellpadding="8">
+    <a
+        href="{{ route('owner.stock-counts.create') }}"
+        class="btn btn-dark"
+    >
+        + New Stock Count
+    </a>
 
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Product</th>
-                <th>Expected</th>
-                <th>Physical</th>
-                <th>Discrepancy</th>
-                <th>Status</th>
-                <th>Counted By</th>
-            </tr>
-        </thead>
+</div>
 
-        <tbody>
+<div class="card content-card shadow-sm">
 
-            @forelse($stockCounts as $count)
+    <div class="card-body">
 
-                <tr>
+        <div class="table-responsive">
 
-                    <td>
-                        {{ $count->created_at->format('Y-m-d H:i') }}
-                    </td>
+            <table class="table table-hover align-middle">
 
-                    <td>
-                        {{ $count->product->name }}
-                    </td>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th>Expected</th>
+                        <th>Physical</th>
+                        <th>Difference</th>
+                        <th>Status</th>
+                        <th>Counted By</th>
+                    </tr>
+                </thead>
 
-                    <td>
-                        {{ $count->expected_quantity }}
-                    </td>
+                <tbody>
 
-                    <td>
-                        {{ $count->physical_quantity }}
-                    </td>
+                @forelse($stockCounts as $count)
 
-                    <td>
-                        {{ $count->discrepancy_quantity }}
-                    </td>
+                    <tr>
 
-                    <td>
-                        {{ $count->status }}
-                    </td>
+                        <td>
+                            {{ $count->created_at->format('d M Y H:i') }}
+                        </td>
 
-                    <td>
-                        {{ $count->user->name }}
-                    </td>
+                        <td class="fw-semibold">
+                            {{ $count->product->name }}
+                        </td>
 
-                </tr>
+                        <td>
+                            {{ $count->expected_quantity }}
+                        </td>
 
-            @empty
+                        <td>
+                            {{ $count->physical_quantity }}
+                        </td>
 
-                <tr>
-                    <td colspan="7">
-                        No stock counts recorded.
-                    </td>
-                </tr>
+                        <td class="fw-bold">
+                            {{ $count->discrepancy_quantity > 0 ? '+' : '' }}
+                            {{ $count->discrepancy_quantity }}
+                        </td>
 
-            @endforelse
+                        <td>
 
-        </tbody>
+                            @if($count->status === 'MATCH')
 
-    </table>
+                                <span class="badge bg-success">
+                                    MATCH
+                                </span>
 
-</body>
-</html>
+                            @elseif($count->status === 'SHORTAGE')
+
+                                <span class="badge bg-danger">
+                                    SHORTAGE
+                                </span>
+
+                            @else
+
+                                <span class="badge bg-warning text-dark">
+                                    SURPLUS
+                                </span>
+
+                            @endif
+
+                        </td>
+
+                        <td>
+                            {{ $count->user->name }}
+                        </td>
+
+                    </tr>
+
+                @empty
+
+                    <tr>
+                        <td
+                            colspan="7"
+                            class="text-center text-muted py-4"
+                        >
+                            No stock counts recorded.
+                        </td>
+                    </tr>
+
+                @endforelse
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+</div>
+
+@endsection

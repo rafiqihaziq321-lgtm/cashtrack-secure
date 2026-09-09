@@ -1,88 +1,92 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Record Sale - CashTrack Secure</title>
-</head>
+@extends('layouts.cashier')
 
-<body>
+@section('title', 'New Sale - CashTrack Secure')
 
-    <h1>CashTrack Secure</h1>
+@section('content')
 
-    <h2>Record Sale</h2>
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">
+        Record Sale
+    </h2>
 
-    <p>
-        Logged in as:
-        {{ auth()->user()->name }}
+    <p class="text-muted mb-0">
+        Record a completed product sale.
     </p>
+</div>
 
-    @if(session('success'))
-        <p>{{ session('success') }}</p>
-    @endif
+<div class="card content-card shadow-sm">
 
-    @if($errors->any())
-        <ul>
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    @endif
+    <div class="card-body p-4">
 
-    <form method="POST" action="{{ route('cashier.sales.store') }}">
+        <form
+            method="POST"
+            action="{{ route('cashier.sales.store') }}"
+        >
 
-        @csrf
+            @csrf
 
-        <div>
-            <label>Product</label>
+            <div class="mb-3">
 
-            <select name="product_id" required>
+                <label class="form-label fw-semibold">
+                    Product
+                </label>
 
-                <option value="">
-                    -- Select Product --
-                </option>
+                <select
+                    name="product_id"
+                    class="form-select"
+                    required
+                >
 
-                @foreach($products as $product)
-
-                    <option value="{{ $product->id }}">
-                        {{ $product->sku }}
-                        -
-                        {{ $product->name }}
-                        -
-                        RM {{ number_format($product->selling_price, 2) }}
+                    <option value="">
+                        -- Select Product --
                     </option>
 
-                @endforeach
+                    @foreach($products as $product)
 
-            </select>
-        </div>
+                        <option
+                            value="{{ $product->id }}"
+                            @selected(old('product_id') == $product->id)
+                        >
+                            {{ $product->sku }}
+                            -
+                            {{ $product->name }}
+                            -
+                            RM {{ number_format($product->selling_price, 2) }}
+                        </option>
 
-        <br>
+                    @endforeach
 
-        <div>
-            <label>Quantity</label>
+                </select>
 
-            <input
-                type="number"
-                name="quantity"
-                min="1"
-                value="1"
-                required
+            </div>
+
+            <div class="mb-4">
+
+                <label class="form-label fw-semibold">
+                    Quantity
+                </label>
+
+                <input
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    value="{{ old('quantity', 1) }}"
+                    class="form-control"
+                    required
+                >
+
+            </div>
+
+            <button
+                type="submit"
+                class="btn btn-dark"
             >
-        </div>
+                Complete Sale
+            </button>
 
-        <br>
+        </form>
 
-        <button type="submit">
-            Confirm Sale
-        </button>
+    </div>
+</div>
 
-    </form>
-
-    <br>
-
-    <a href="{{ route('cashier.dashboard') }}">
-        Back to Dashboard
-    </a>
-
-</body>
-</html>
+@endsection

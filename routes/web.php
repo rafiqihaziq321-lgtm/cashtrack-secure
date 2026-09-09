@@ -6,11 +6,35 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\StockCountController;
 use App\Http\Controllers\StockInController;
+use App\Http\Controllers\DiscrepancyAlertController;
+use App\Http\Controllers\AuditTrailController;
 
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+
+    Route::get('/dashboard', function () {
+
+        $user = request()->user();
+
+        if (!$user->role) {
+            abort(403, 'User role not found.');
+        }
+
+        $roleName = strtolower($user->role->name);
+
+        if ($roleName === 'owner') {
+            return redirect()->route('owner.dashboard');
+        }
+
+        if ($roleName === 'cashier') {
+            return redirect()->route('cashier.dashboard');
+        }
+
+        abort(403, 'User role not recognized.');
+
+    })->name('dashboard');
+
 });
 
 Route::middleware(['auth', 'role:Owner'])->group(function () {
@@ -49,6 +73,16 @@ Route::middleware(['auth', 'role:Owner'])->group(function () {
 
     Route::post('/owner/stock-in', [StockInController::class, 'store'])
         ->name('owner.stock-in.store');
+
+    Route::get(
+        '/owner/alerts',
+        [DiscrepancyAlertController::class, 'index']
+    )->name('owner.alerts.index');
+
+    Route::get(
+        '/owner/audit-trail',
+        [AuditTrailController::class, 'index']
+    )->name('owner.audit.index');
 });
 
 Route::middleware(['auth', 'role:Cashier'])->group(function () {

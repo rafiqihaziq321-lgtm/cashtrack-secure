@@ -1,94 +1,147 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Edit Product - CashTrack Secure</title>
-</head>
+@extends('layouts.owner')
 
-<body>
+@section('title', 'Edit Product - CashTrack Secure')
 
-    <h1>CashTrack Secure</h1>
+@section('content')
 
-    <h2>Edit Product</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
 
-    <form method="POST"
-          action="{{ route('owner.products.update', $product) }}">
+    <div>
+        <h2 class="fw-bold mb-1">Edit Product</h2>
 
-        @csrf
-        @method('PUT')
+        <p class="text-muted mb-0">
+            Update product information.
+        </p>
+    </div>
 
-        <div>
-            <label>SKU</label>
+    <a
+        href="{{ route('owner.products.index') }}"
+        class="btn btn-outline-secondary"
+    >
+        Back to Products
+    </a>
 
-            <input
-                type="text"
-                name="sku"
-                value="{{ old('sku', $product->sku) }}"
-                required
-            >
-        </div>
+</div>
 
-        <br>
+<div class="card content-card shadow-sm">
 
-        <div>
-            <label>Product Name</label>
+    <div class="card-body p-4">
 
-            <input
-                type="text"
-                name="name"
-                value="{{ old('name', $product->name) }}"
-                required
-            >
-        </div>
+        <form
+            method="POST"
+            action="{{ route('owner.products.update', $product) }}"
+        >
 
-        <br>
+            @csrf
+            @method('PUT')
 
-        <div>
-            <label>Description</label>
+            <div class="row g-3">
 
-            <textarea name="description">{{ old('description', $product->description) }}</textarea>
-        </div>
+                <div class="col-md-6">
 
-        <br>
+                    <label class="form-label fw-semibold">
+                        SKU
+                    </label>
 
-        <div>
-            <label>Selling Price (RM)</label>
+                    <input
+                        type="text"
+                        name="sku"
+                        value="{{ old('sku', $product->sku) }}"
+                        class="form-control"
+                        required
+                    >
 
-            <input
-                type="number"
-                name="selling_price"
-                step="0.01"
-                min="0"
-                value="{{ old('selling_price', $product->selling_price) }}"
-                required
-            >
-        </div>
+                </div>
 
-        <br>
+                <div class="col-md-6">
 
-        <div>
-            <label>Reorder Level</label>
+                    <label class="form-label fw-semibold">
+                        Product Name
+                    </label>
 
-            <input
-                type="number"
-                name="reorder_level"
-                min="0"
-                value="{{ old('reorder_level', $product->reorder_level) }}"
-                required
-            >
-        </div>
+                    <input
+                        type="text"
+                        name="name"
+                        value="{{ old('name', $product->name) }}"
+                        class="form-control"
+                        required
+                    >
 
-        <br>
+                </div>
 
-        <button type="submit">
-            Update Product
-        </button>
+                <div class="col-12">
 
-        <a href="{{ route('owner.products.index') }}">
-            Cancel
-        </a>
+                    <label class="form-label fw-semibold">
+                        Description
+                    </label>
 
-    </form>
+                    <textarea
+                        name="description"
+                        class="form-control"
+                        rows="3"
+                    >{{ old('description', $product->description) }}</textarea>
 
-</body>
-</html>
+                </div>
+
+                <div class="col-md-6">
+
+                    <label class="form-label fw-semibold">
+                        Selling Price (RM)
+                    </label>
+
+                    <input
+                        type="number"
+                        name="selling_price"
+                        step="0.01"
+                        min="0"
+                        value="{{ old('selling_price', $product->selling_price) }}"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+                <div class="col-md-6">
+
+                    <label class="form-label fw-semibold">
+                        Reorder Level
+                    </label>
+
+                    <input
+                        type="number"
+                        name="reorder_level"
+                        min="0"
+                        value="{{ old('reorder_level', $product->reorder_level) }}"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+
+                <button
+                    type="submit"
+                    class="btn btn-dark"
+                >
+                    Update Product
+                </button>
+
+                <a
+                    href="{{ route('owner.products.index') }}"
+                    class="btn btn-outline-secondary"
+                >
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+@endsection

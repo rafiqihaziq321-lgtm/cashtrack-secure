@@ -1,24 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Cashier Dashboard - CashTrack Secure</title>
-</head>
+@extends('layouts.cashier')
 
-<body>
+@section('title', 'Cashier Dashboard - CashTrack Secure')
 
-    <h1>CashTrack Secure</h1>
+@section('content')
 
-    <h2>Cashier Dashboard</h2>
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">
+        Cashier Dashboard
+    </h2>
 
-    <p>Welcome, {{ auth()->user()->name }}</p>
+    <p class="text-muted mb-0">
+        Record customer sales securely through CashTrack Secure.
+    </p>
+</div>
 
-    <p>Role: Cashier</p>
+<div class="row g-4">
 
-    <form method="POST" action="{{ route('logout') }}">
-        @csrf
-        <button type="submit">Logout</button>
-    </form>
+    <div class="col-md-6">
 
-</body>
-</html>
+        <div class="card content-card shadow-sm h-100">
+
+            <div class="card-body p-4">
+
+                <h5 class="fw-bold">
+                    New Sale
+                </h5>
+
+                <p class="text-muted">
+                    Record a product sale and automatically update the inventory ledger.
+                </p>
+
+                <a
+                    href="{{ route('cashier.sales.create') }}"
+                    class="btn btn-dark"
+                >
+                    Record Sale
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-6">
+
+        <div class="card content-card shadow-sm h-100">
+
+            <div class="card-body p-4">
+
+                <h5 class="fw-bold">
+                    Secure Transaction Recording
+                </h5>
+
+                <p class="text-muted mb-0">
+                    Each completed sale generates an inventory movement that becomes part of the system audit trail.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@endsection

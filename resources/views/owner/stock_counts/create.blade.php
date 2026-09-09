@@ -1,85 +1,115 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Stock Count - CashTrack Secure</title>
-</head>
+@extends('layouts.owner')
 
-<body>
+@section('title', 'New Stock Count - CashTrack Secure')
 
-    <h1>CashTrack Secure</h1>
+@section('content')
 
-    <h2>Stock Count</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
 
-    @if($errors->any())
-        <ul>
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    @endif
+    <div>
+        <h2 class="fw-bold mb-1">New Stock Count</h2>
 
-    <form method="POST"
-          action="{{ route('owner.stock-counts.store') }}">
+        <p class="text-muted mb-0">
+            Compare physical inventory with expected ledger stock.
+        </p>
+    </div>
 
-        @csrf
-
-        <div>
-            <label>Product</label>
-
-            <select name="product_id" required>
-
-                <option value="">
-                    -- Select Product --
-                </option>
-
-                @foreach($products as $product)
-
-                    <option value="{{ $product->id }}">
-                        {{ $product->sku }}
-                        -
-                        {{ $product->name }}
-                    </option>
-
-                @endforeach
-
-            </select>
-        </div>
-
-        <br>
-
-        <div>
-            <label>Physical Quantity</label>
-
-            <input
-                type="number"
-                name="physical_quantity"
-                min="0"
-                required
-            >
-        </div>
-
-        <br>
-
-        <div>
-            <label>Notes</label>
-
-            <textarea name="notes"></textarea>
-        </div>
-
-        <br>
-
-        <button type="submit">
-            Record Stock Count
-        </button>
-
-    </form>
-
-    <br>
-
-    <a href="{{ route('owner.stock-counts.index') }}">
-        View Stock Count History
+    <a
+        href="{{ route('owner.stock-counts.index') }}"
+        class="btn btn-outline-secondary"
+    >
+        Stock Count History
     </a>
 
-</body>
-</html>
+</div>
+
+<div class="card content-card shadow-sm">
+
+    <div class="card-body p-4">
+
+        <form
+            method="POST"
+            action="{{ route('owner.stock-counts.store') }}"
+        >
+
+            @csrf
+
+            <div class="mb-3">
+
+                <label class="form-label fw-semibold">
+                    Product
+                </label>
+
+                <select
+                    name="product_id"
+                    class="form-select"
+                    required
+                >
+
+                    <option value="">
+                        -- Select Product --
+                    </option>
+
+                    @foreach($products as $product)
+
+                        <option
+                            value="{{ $product->id }}"
+                            @selected(old('product_id') == $product->id)
+                        >
+                            {{ $product->sku }} - {{ $product->name }}
+                        </option>
+
+                    @endforeach
+
+                </select>
+
+            </div>
+
+            <div class="mb-3">
+
+                <label class="form-label fw-semibold">
+                    Physical Quantity
+                </label>
+
+                <input
+                    type="number"
+                    name="physical_quantity"
+                    min="0"
+                    value="{{ old('physical_quantity') }}"
+                    class="form-control"
+                    required
+                >
+
+                <div class="form-text">
+                    Enter the quantity physically counted.
+                </div>
+
+            </div>
+
+            <div class="mb-4">
+
+                <label class="form-label fw-semibold">
+                    Notes
+                </label>
+
+                <textarea
+                    name="notes"
+                    class="form-control"
+                    rows="3"
+                >{{ old('notes') }}</textarea>
+
+            </div>
+
+            <button
+                type="submit"
+                class="btn btn-dark"
+            >
+                Record Stock Count
+            </button>
+
+        </form>
+
+    </div>
+</div>
+
+@endsection

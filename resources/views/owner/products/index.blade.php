@@ -1,101 +1,150 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Products - CashTrack Secure</title>
-</head>
+@extends('layouts.owner')
 
-<body>
+@section('title', 'Products - CashTrack Secure')
 
-    <h1>CashTrack Secure</h1>
+@section('content')
 
-    <h2>Product Management</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
 
-    <p>
-        <a href="{{ route('owner.dashboard') }}">
-            Back to Dashboard
-        </a>
-    </p>
+    <div>
+        <h2 class="fw-bold mb-1">
+            Product Management
+        </h2>
 
-    @if(session('success'))
-        <p>{{ session('success') }}</p>
-    @endif
+        <p class="text-muted mb-0">
+            Manage products available in the inventory system.
+        </p>
+    </div>
 
-    <p>
-        <a href="{{ route('owner.products.create') }}">
-            + Add Product
-        </a>
-    </p>
+    <a
+        href="{{ route('owner.products.create') }}"
+        class="btn btn-dark"
+    >
+        + Add Product
+    </a>
 
-    <table border="1" cellpadding="8">
-        <thead>
-            <tr>
-                <th>SKU</th>
-                <th>Name</th>
-                <th>Selling Price</th>
-                <th>Reorder Level</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
+</div>
 
-        <tbody>
+<div class="card content-card shadow-sm">
 
-            @forelse($products as $product)
+    <div class="card-body">
 
-                <tr>
-                    <td>{{ $product->sku }}</td>
+        <div class="table-responsive">
 
-                    <td>{{ $product->name }}</td>
+            <table class="table table-hover align-middle">
 
-                    <td>
-                        RM {{ number_format($product->selling_price, 2) }}
-                    </td>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Product</th>
+                        <th>Selling Price</th>
+                        <th>Reorder Level</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
 
-                    <td>{{ $product->reorder_level }}</td>
+                <tbody>
 
-                    <td>
-                        {{ $product->is_active ? 'Active' : 'Inactive' }}
-                    </td>
+                @forelse($products as $product)
 
-                    <td>
+                    <tr>
 
-                        <a href="{{ route('owner.products.edit', $product) }}">
-                            Edit
-                        </a>
+                        <td>
+                            <code>{{ $product->sku }}</code>
+                        </td>
 
-                        @if($product->is_active)
+                        <td class="fw-semibold">
+                            {{ $product->name }}
+                        </td>
 
-                            <form
-                                method="POST"
-                                action="{{ route('owner.products.deactivate', $product) }}"
-                                style="display:inline"
-                            >
-                                @csrf
-                                @method('PATCH')
+                        <td>
+                            RM {{ number_format($product->selling_price, 2) }}
+                        </td>
 
-                                <button type="submit">
-                                    Deactivate
-                                </button>
-                            </form>
+                        <td>
+                            {{ $product->reorder_level }}
+                        </td>
 
-                        @endif
+                        <td>
 
-                    </td>
-                </tr>
+                            @if($product->is_active)
 
-            @empty
+                                <span class="badge bg-success">
+                                    ACTIVE
+                                </span>
 
-                <tr>
-                    <td colspan="6">
-                        No products found.
-                    </td>
-                </tr>
+                            @else
 
-            @endforelse
+                                <span class="badge bg-secondary">
+                                    INACTIVE
+                                </span>
 
-        </tbody>
-    </table>
+                            @endif
 
-</body>
-</html>
+                        </td>
+
+                        <td>
+
+                            <div class="d-flex gap-2">
+
+                                <a
+                                    href="{{ route('owner.products.edit', $product) }}"
+                                    class="btn btn-outline-dark btn-sm"
+                                >
+                                    Edit
+                                </a>
+
+                                @if($product->is_active)
+
+                                    <form
+                                        method="POST"
+                                        action="{{ route('owner.products.deactivate', $product) }}"
+                                        onsubmit="return confirm('Deactivate this product?')"
+                                    >
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-outline-danger btn-sm"
+                                        >
+                                            Deactivate
+                                        </button>
+
+                                    </form>
+
+                                @endif
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                @empty
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="text-center text-muted py-4"
+                        >
+                            No products found.
+                        </td>
+
+                    </tr>
+
+                @endforelse
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+@endsection

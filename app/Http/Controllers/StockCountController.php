@@ -8,6 +8,8 @@ use App\Models\StockCount;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use App\Models\DiscrepancyAlert;
+use Illuminate\Support\Facades\DB;
 
 class StockCountController extends Controller
 {
@@ -57,15 +59,34 @@ class StockCountController extends Controller
             $status = 'SURPLUS';
         }
 
-        StockCount::create([
-            'product_id' => $product->id,
-            'user_id' => auth()->id(),
-            'expected_quantity' => $expectedQuantity,
-            'physical_quantity' => $physicalQuantity,
-            'discrepancy_quantity' => $discrepancy,
-            'status' => $status,
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        DB::transaction(function () use (
+            $product,
+            $expectedQuantity,
+            $physicalQuantity,
+            $discrepancy,
+            $status,
+            $validated
+        ) {
+            $stockCount = StockCount::create([
+                'product_id' => $product->id,
+                'user_id' => auth()->id(),
+                'expected_quantity' => $expectedQuantity,
+                'physical_quantity' => $physicalQuantity,
+                'discrepancy_quantity' => $discrepancy,
+                'status' => $status,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            if ($status !== 'MATCH') {
+                DiscrepancyAlert::create([
+                    'stock_count_id' => $stockCount->id,
+                    'product_id' => $product->id,
+                    'discrepancy_quantity' => $discrepancy,
+                    'type' => $status,
+                    'status' => 'OPEN',
+                ]);
+            }
+        });
 
         return redirect()
             ->route('owner.stock-counts.index')

@@ -17,7 +17,40 @@ class InventoryMovement extends Model
         'reference_type',
         'reference_id',
         'notes',
+        'previous_hash',
+        'record_hash',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (InventoryMovement $movement) {
+            $lastMovement = self::latest('id')->first();
+
+            $movement->previous_hash = $lastMovement?->record_hash;
+
+            $movement->record_hash = hash(
+                'sha256',
+                self::generateHashData($movement)
+            );
+        });
+    }
+
+    private static function generateHashData(
+        InventoryMovement $movement
+    ): string {
+        return implode('|', [
+            $movement->product_id,
+            $movement->user_id,
+            $movement->movement_type,
+            $movement->quantity,
+            $movement->quantity_before,
+            $movement->quantity_after,
+            $movement->reference_type,
+            $movement->reference_id,
+            $movement->notes,
+            $movement->previous_hash,
+        ]);
+    }
 
     public function product(): BelongsTo
     {
