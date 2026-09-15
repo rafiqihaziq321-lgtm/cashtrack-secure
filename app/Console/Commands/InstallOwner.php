@@ -2,7 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\{Role, User};
+use App\Models\Role;
+use App\Models\User;
 use App\Services\InventoryService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;

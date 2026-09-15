@@ -2,11 +2,21 @@
 
 namespace App\Services;
 
-use App\Models\{DiscrepancyAlert, InventoryMovement, Product, Role, Sale, SaleItem, StockCount, User};
+use App\Models\DiscrepancyAlert;
+use App\Models\InventoryMovement;
+use App\Models\Product;
+use App\Models\Role;
+use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\StockCount;
+use App\Models\User;
 use Closure;
-use Illuminate\Support\Facades\{Crypt, DB, Validator};
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Illuminate\Validation\{Rule, ValidationException};
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class InventoryService
 {

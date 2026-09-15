@@ -2,9 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Services\InventoryService;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -29,14 +34,14 @@ class AppServiceProvider extends ServiceProvider
         if ($database === 'cashtrack_secure' || (app()->environment('testing') && $database !== 'cashtrack_plan_b_testing')) {
             throw new \RuntimeException('Unsafe database for Plan B. Check environment and config cache.');
         }
-        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($event): void {
-            if ($event->user instanceof \App\Models\User) {
-                app(\App\Services\InventoryService::class)->audit($event->user->id, 'akaun.log_masuk', 'user', $event->user->id);
+        Event::listen(Login::class, function ($event): void {
+            if ($event->user instanceof User) {
+                app(InventoryService::class)->audit($event->user->id, 'akaun.log_masuk', 'user', $event->user->id);
             }
         });
-        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Logout::class, function ($event): void {
-            if ($event->user instanceof \App\Models\User) {
-                app(\App\Services\InventoryService::class)->audit($event->user->id, 'akaun.log_keluar', 'user', $event->user->id);
+        Event::listen(Logout::class, function ($event): void {
+            if ($event->user instanceof User) {
+                app(InventoryService::class)->audit($event->user->id, 'akaun.log_keluar', 'user', $event->user->id);
             }
         });
     }

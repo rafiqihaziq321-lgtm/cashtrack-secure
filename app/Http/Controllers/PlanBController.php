@@ -2,10 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{DiscrepancyAlert, InventoryMovement, Product, Sale, StockCount, User};
-use App\Services\{InventoryService, LedgerIntegrity};
+use App\Models\DiscrepancyAlert;
+use App\Models\InventoryMovement;
+use App\Models\Product;
+use App\Models\Sale;
+use App\Models\StockCount;
+use App\Models\User;
+use App\Services\InventoryService;
+use App\Services\LedgerIntegrity;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\{RedirectResponse, Request};
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;

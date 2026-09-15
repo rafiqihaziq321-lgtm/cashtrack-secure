@@ -3,8 +3,7 @@
 namespace App\Livewire\Settings;
 
 use App\Concerns\PasswordValidationRules;
-use App\Livewire\Actions\Logout;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class DeleteUserForm extends Component
@@ -14,17 +13,16 @@ class DeleteUserForm extends Component
     public string $password = '';
 
     /**
-     * Delete the currently authenticated user.
+     * Preserve account references used by the audit history.
      */
-    public function deleteUser(Logout $logout): void
+    public function deleteUser(): void
     {
         $this->validate([
             'password' => $this->currentPasswordRules(),
         ]);
 
-        abort_if(Auth::user()->role_id !== null, 403, 'Akaun operasi tidak boleh dipadam; hubungi Owner.');
-        tap(Auth::user(), $logout(...))->delete();
-
-        $this->redirect('/', navigate: true);
+        throw ValidationException::withMessages([
+            'account' => 'Akaun dikekalkan untuk sejarah audit. Owner boleh menyahaktif akaun Cashier.',
+        ]);
     }
 }

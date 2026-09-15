@@ -1,6 +1,6 @@
 <x-layouts::auth :title="__('Tetapkan semula kata laluan')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Tetapkan semula kata laluan')" :description="__('Please enter your new password below')" />
+        <x-auth-header :title="__('Tetapkan semula kata laluan')" :description="__('Masukkan kata laluan baharu anda di bawah')" />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -28,7 +28,7 @@
                 required
                 autocomplete="new-password"
                 :placeholder="__('Kata laluan')"
-                passwordrules="{{ \Illuminate\Validation\Rules\Kata laluan::defaults()->toKata laluanRulesString() }}"
+                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
                 viewable
             />
 
@@ -40,7 +40,7 @@
                 required
                 autocomplete="new-password"
                 :placeholder="__('Ulang kata laluan')"
-                passwordrules="{{ \Illuminate\Validation\Rules\Kata laluan::defaults()->toKata laluanRulesString() }}"
+                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
                 viewable
             />
 

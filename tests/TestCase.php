@@ -17,6 +17,7 @@ abstract class TestCase extends BaseTestCase
             || $connection->selectOne('SELECT DATABASE() AS name')->name !== 'cashtrack_plan_b_testing') {
             throw new \RuntimeException('Refusing to run tests against an unverified database.');
         }
+
         return $app;
     }
 

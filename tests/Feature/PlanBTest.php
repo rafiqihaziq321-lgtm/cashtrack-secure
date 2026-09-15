@@ -1,8 +1,15 @@
 <?php
 
-use App\Models\{DiscrepancyAlert, InventoryMovement, Product, Role, Sale, StockCount, User};
-use App\Services\{InventoryService, LedgerIntegrity};
-use Illuminate\Support\Facades\{DB, Hash};
+use App\Models\DiscrepancyAlert;
+use App\Models\InventoryMovement;
+use App\Models\Product;
+use App\Models\Role;
+use App\Models\Sale;
+use App\Models\User;
+use App\Services\InventoryService;
+use App\Services\LedgerIntegrity;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 

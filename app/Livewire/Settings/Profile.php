@@ -77,8 +77,6 @@ class Profile extends Component
     #[Computed]
     public function showDeleteUser(): bool
     {
-        $user = Auth::user();
-
-        return $user->role_id === null;
+        return false;
     }
 }
