@@ -41,6 +41,29 @@ class User extends Authenticatable implements PasskeyUser
      *
      * @return array<string, string>
      */
+    protected static function booted(): void
+    {
+        static::updating(function (User $user): void {
+            $wasOwner = Role::find($user->getOriginal('role_id'))?->name === 'Owner';
+            if ($wasOwner && ($user->isDirty('role_id') || ! $user->is_active)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['account' => 'Akaun Owner dilindungi daripada penukaran peranan atau nyahaktif.']);
+            }
+        });
+        static::deleting(function (User $user): void {
+            if ($user->role_id !== null) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['account' => 'Akaun operasi dikekalkan untuk sejarah audit.']);
+            }
+        });
+        static::updated(function (User $user): void {
+            $fields = array_intersect(['name', 'email', 'is_active', 'role_id'], array_keys($user->getChanges()));
+            if ($fields || $user->wasChanged('password')) {
+                app(\App\Services\InventoryService::class)->audit(auth()->id() ?? $user->id, 'profil.dikemas_kini', 'user', $user->id,
+                    array_intersect_key($user->getOriginal(), array_flip($fields)),
+                    $user->only($fields) + ['password_changed' => $user->wasChanged('password')]);
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [

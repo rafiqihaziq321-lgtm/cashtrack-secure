@@ -1,6 +1,6 @@
-<x-layouts::auth :title="__('Reset password')">
+<x-layouts::auth :title="__('Tetapkan semula kata laluan')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Reset password')" :description="__('Please enter your new password below')" />
+        <x-auth-header :title="__('Tetapkan semula kata laluan')" :description="__('Please enter your new password below')" />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -10,7 +10,7 @@
             <!-- Token -->
             <input type="hidden" name="token" value="{{ request()->route('token') }}">
 
-            <!-- Email Address -->
+            <!-- Email login -->
             <flux:input
                 name="email"
                 value="{{ request('email') }}"
@@ -20,33 +20,33 @@
                 autocomplete="email"
             />
 
-            <!-- Password -->
+            <!-- Kata laluan -->
             <flux:input
                 name="password"
-                :label="__('Password')"
+                :label="__('Kata laluan')"
                 type="password"
                 required
                 autocomplete="new-password"
-                :placeholder="__('Password')"
-                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
+                :placeholder="__('Kata laluan')"
+                passwordrules="{{ \Illuminate\Validation\Rules\Kata laluan::defaults()->toKata laluanRulesString() }}"
                 viewable
             />
 
-            <!-- Confirm Password -->
+            <!-- Confirm Kata laluan -->
             <flux:input
                 name="password_confirmation"
-                :label="__('Confirm password')"
+                :label="__('Ulang kata laluan')"
                 type="password"
                 required
                 autocomplete="new-password"
-                :placeholder="__('Confirm password')"
-                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
+                :placeholder="__('Ulang kata laluan')"
+                passwordrules="{{ \Illuminate\Validation\Rules\Kata laluan::defaults()->toKata laluanRulesString() }}"
                 viewable
             />
 
             <div class="flex items-center justify-end">
                 <flux:button type="submit" variant="primary" class="w-full" data-test="reset-password-button">
-                    {{ __('Reset password') }}
+                    {{ __('Tetapkan semula kata laluan') }}
                 </flux:button>
             </div>
         </form>

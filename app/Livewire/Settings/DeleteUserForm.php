@@ -22,6 +22,7 @@ class DeleteUserForm extends Component
             'password' => $this->currentPasswordRules(),
         ]);
 
+        abort_if(Auth::user()->role_id !== null, 403, 'Akaun operasi tidak boleh dipadam; hubungi Owner.');
         tap(Auth::user(), $logout(...))->delete();
 
         $this->redirect('/', navigate: true);

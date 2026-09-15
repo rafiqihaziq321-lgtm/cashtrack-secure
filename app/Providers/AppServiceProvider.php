@@ -24,6 +24,21 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $connection = config('database.default');
+        $database = config("database.connections.$connection.database");
+        if ($database === 'cashtrack_secure' || (app()->environment('testing') && $database !== 'cashtrack_plan_b_testing')) {
+            throw new \RuntimeException('Unsafe database for Plan B. Check environment and config cache.');
+        }
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($event): void {
+            if ($event->user instanceof \App\Models\User) {
+                app(\App\Services\InventoryService::class)->audit($event->user->id, 'akaun.log_masuk', 'user', $event->user->id);
+            }
+        });
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Logout::class, function ($event): void {
+            if ($event->user instanceof \App\Models\User) {
+                app(\App\Services\InventoryService::class)->audit($event->user->id, 'akaun.log_keluar', 'user', $event->user->id);
+            }
+        });
     }
 
     /**

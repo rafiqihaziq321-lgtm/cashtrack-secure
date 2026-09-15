@@ -15,6 +15,9 @@ class StockCount extends Model
         'discrepancy_quantity',
         'status',
         'notes',
+        'movement_version',
+        'recount_of',
+        'counted_at',
     ];
 
     public function product(): BelongsTo

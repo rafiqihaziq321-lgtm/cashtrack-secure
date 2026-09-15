@@ -79,6 +79,6 @@ class Profile extends Component
     {
         $user = Auth::user();
 
-        return ! $user instanceof MustVerifyEmail || $user->hasVerifiedEmail();
+        return $user->role_id === null;
     }
 }

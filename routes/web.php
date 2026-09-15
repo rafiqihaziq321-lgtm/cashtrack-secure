@@ -1,99 +1,47 @@
 <?php
 
+use App\Http\Controllers\PlanBController as PlanB;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\SaleController;
-use App\Http\Controllers\StockCountController;
-use App\Http\Controllers\StockInController;
-use App\Http\Controllers\DiscrepancyAlertController;
-use App\Http\Controllers\AuditTrailController;
 
 Route::view('/', 'welcome')->name('home');
+Route::middleware('auth')->get('/dashboard', function () {
+    return match (request()->user()->role?->name) {
+        'Owner' => redirect()->route('owner.dashboard'),
+        'Cashier' => redirect()->route('cashier.dashboard'),
+        default => abort(403, 'Peranan akaun belum diberikan.'),
+    };
+})->name('dashboard');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-
-    Route::get('/dashboard', function () {
-
-        $user = request()->user();
-
-        if (!$user->role) {
-            abort(403, 'User role not found.');
-        }
-
-        $roleName = strtolower($user->role->name);
-
-        if ($roleName === 'owner') {
-            return redirect()->route('owner.dashboard');
-        }
-
-        if ($roleName === 'cashier') {
-            return redirect()->route('cashier.dashboard');
-        }
-
-        abort(403, 'User role not recognized.');
-
-    })->name('dashboard');
-
+Route::middleware(['auth', 'role:Owner'])->group(function (): void {
+    Route::get('/owner/dashboard', [PlanB::class, 'dashboard'])->name('owner.dashboard');
+    Route::get('/owner/products', [PlanB::class, 'products'])->name('owner.products.index');
+    Route::get('/owner/products/create', [PlanB::class, 'productForm'])->name('owner.products.create');
+    Route::post('/owner/products', [PlanB::class, 'saveProduct'])->name('owner.products.store');
+    Route::get('/owner/products/{product}/edit', [PlanB::class, 'productForm'])->name('owner.products.edit');
+    Route::put('/owner/products/{product}', [PlanB::class, 'saveProduct'])->name('owner.products.update');
+    Route::get('/owner/stock-in/create', [PlanB::class, 'receiptForm'])->name('owner.stock-in.create');
+    Route::post('/owner/stock-in', [PlanB::class, 'receive'])->name('owner.stock-in.store');
+    Route::get('/owner/receipts/{id}', [PlanB::class, 'receipt'])->name('owner.receipts.show');
+    Route::get('/owner/stock-counts', [PlanB::class, 'counts'])->name('owner.stock-counts.index');
+    Route::get('/owner/stock-counts/create', [PlanB::class, 'countForm'])->name('owner.stock-counts.create');
+    Route::post('/owner/stock-counts', [PlanB::class, 'count'])->name('owner.stock-counts.store');
+    Route::get('/owner/alerts', [PlanB::class, 'alerts'])->name('owner.alerts.index');
+    Route::get('/owner/alerts/{alert}', [PlanB::class, 'alert'])->name('owner.alerts.show');
+    Route::post('/owner/alerts/{alert}', [PlanB::class, 'review'])->name('owner.alerts.review');
+    Route::get('/owner/audit-trail', [PlanB::class, 'audit'])->name('owner.audit.index');
+    Route::get('/owner/reports', [PlanB::class, 'report'])->name('owner.reports.index');
+    Route::get('/owner/users', [PlanB::class, 'users'])->name('owner.users.index');
+    Route::get('/owner/users/create', [PlanB::class, 'userForm'])->name('owner.users.create');
+    Route::post('/owner/users', [PlanB::class, 'saveUser'])->name('owner.users.store');
+    Route::get('/owner/users/{user}/edit', [PlanB::class, 'userForm'])->name('owner.users.edit');
+    Route::put('/owner/users/{user}', [PlanB::class, 'saveUser'])->name('owner.users.update');
 });
-
-Route::middleware(['auth', 'role:Owner'])->group(function () {
-    Route::get('/owner/dashboard', [DashboardController::class, 'owner'])
-        ->name('owner.dashboard');
-
-    Route::get('/owner/products', [ProductController::class, 'index'])
-        ->name('owner.products.index');
-
-    Route::get('/owner/products/create', [ProductController::class, 'create'])
-        ->name('owner.products.create');
-
-    Route::post('/owner/products', [ProductController::class, 'store'])
-        ->name('owner.products.store');
-
-    Route::get('/owner/products/{product}/edit', [ProductController::class, 'edit'])
-        ->name('owner.products.edit');
-
-    Route::put('/owner/products/{product}', [ProductController::class, 'update'])
-        ->name('owner.products.update');
-
-    Route::patch('/owner/products/{product}/deactivate', [ProductController::class, 'deactivate'])
-        ->name('owner.products.deactivate');
-
-    Route::get('/owner/stock-counts', [StockCountController::class, 'index'])
-        ->name('owner.stock-counts.index');
-
-    Route::get('/owner/stock-counts/create', [StockCountController::class, 'create'])
-        ->name('owner.stock-counts.create');
-
-    Route::post('/owner/stock-counts', [StockCountController::class, 'store'])
-        ->name('owner.stock-counts.store');
-
-    Route::get('/owner/stock-in/create', [StockInController::class, 'create'])
-        ->name('owner.stock-in.create');
-
-    Route::post('/owner/stock-in', [StockInController::class, 'store'])
-        ->name('owner.stock-in.store');
-
-    Route::get(
-        '/owner/alerts',
-        [DiscrepancyAlertController::class, 'index']
-    )->name('owner.alerts.index');
-
-    Route::get(
-        '/owner/audit-trail',
-        [AuditTrailController::class, 'index']
-    )->name('owner.audit.index');
+Route::middleware(['auth', 'role:Cashier'])->get('/cashier/dashboard', [PlanB::class, 'dashboard'])->name('cashier.dashboard');
+Route::middleware(['auth', 'role:Owner,Cashier'])->group(function (): void {
+    Route::get('/cashier/sales/create', [PlanB::class, 'saleForm'])->name('cashier.sales.create');
+    Route::post('/cashier/sales', [PlanB::class, 'sell'])->name('cashier.sales.store');
+    Route::get('/sales/{sale}', [PlanB::class, 'sale'])->name('sales.show');
+    Route::get('/withdrawals/create', [PlanB::class, 'withdrawalForm'])->name('withdrawals.create');
+    Route::post('/withdrawals', [PlanB::class, 'withdraw'])->name('withdrawals.store');
 });
-
-Route::middleware(['auth', 'role:Cashier'])->group(function () {
-    Route::get('/cashier/dashboard', [DashboardController::class, 'cashier'])
-        ->name('cashier.dashboard');
-
-    Route::get('/cashier/sales/create', [SaleController::class, 'create'])
-        ->name('cashier.sales.create');
-
-    Route::post('/cashier/sales', [SaleController::class, 'store'])
-        ->name('cashier.sales.store');
-});
-
-require __DIR__ . '/settings.php';
+require __DIR__.'/settings.php';
