@@ -3,7 +3,7 @@
 
     <flux:heading level="2" class="sr-only">{{ __('Security settings') }}</flux:heading>
 
-    <x-settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
+    <x-settings.layout :heading="__('Update password')" :subheading="__('Choose a strong password to protect your account')">
         <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
             <flux:input
                 wire:model="current_password"
@@ -46,7 +46,7 @@
                     @if ($twoFactorEnabled)
                         <div class="space-y-4">
                             <flux:text>
-                                {{ __('You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.') }}
+                                {{ __('Enter the code from your authenticator app when you sign in.') }}
                             </flux:text>
 
                             <div class="flex justify-start">
@@ -63,7 +63,7 @@
                     @else
                         <div class="space-y-4">
                             <flux:text variant="subtle">
-                                {{ __('When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.') }}
+                                {{ __('Add a second sign-in step using an authenticator app on your phone.') }}
                             </flux:text>
 
                             <flux:button

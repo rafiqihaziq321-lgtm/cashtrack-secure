@@ -1,5 +1,5 @@
-<x-layouts::app.sidebar :title="$title ?? null">
-    <flux:main>
-        {{ $slot }}
-    </flux:main>
-</x-layouts::app.sidebar>
+@extends('layouts.planb')
+
+@section('content')
+    <div class="ct-panel">{{ $slot }}</div>
+@endsection

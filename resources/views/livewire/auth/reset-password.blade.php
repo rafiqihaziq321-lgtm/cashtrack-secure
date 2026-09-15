@@ -1,6 +1,6 @@
-<x-layouts::auth :title="__('Tetapkan semula kata laluan')">
+<x-layouts::auth :title="__('Reset Password')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Tetapkan semula kata laluan')" :description="__('Masukkan kata laluan baharu anda di bawah')" />
+        <x-auth-header :title="__('Reset Password')" :description="__('Enter your new password below')" />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -10,7 +10,7 @@
             <!-- Token -->
             <input type="hidden" name="token" value="{{ request()->route('token') }}">
 
-            <!-- Email login -->
+            <!-- Email -->
             <flux:input
                 name="email"
                 value="{{ request('email') }}"
@@ -20,33 +20,33 @@
                 autocomplete="email"
             />
 
-            <!-- Kata laluan -->
+            <!-- Password -->
             <flux:input
                 name="password"
-                :label="__('Kata laluan')"
+                :label="__('Password')"
                 type="password"
                 required
                 autocomplete="new-password"
-                :placeholder="__('Kata laluan')"
+                :placeholder="__('Password')"
                 passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
                 viewable
             />
 
-            <!-- Confirm Kata laluan -->
+            <!-- Confirm Password -->
             <flux:input
                 name="password_confirmation"
-                :label="__('Ulang kata laluan')"
+                :label="__('Confirm Password')"
                 type="password"
                 required
                 autocomplete="new-password"
-                :placeholder="__('Ulang kata laluan')"
+                :placeholder="__('Confirm Password')"
                 passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
                 viewable
             />
 
             <div class="flex items-center justify-end">
                 <flux:button type="submit" variant="primary" class="w-full" data-test="reset-password-button">
-                    {{ __('Tetapkan semula kata laluan') }}
+                    {{ __('Reset Password') }}
                 </flux:button>
             </div>
         </form>

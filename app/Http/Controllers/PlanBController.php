@@ -165,7 +165,31 @@ class PlanBController extends Controller
             ->orderByDesc('activity_logs.id')->select('activity_logs.*', 'users.name')->paginate(30, ['*'], 'activity_page');
         $movements = InventoryMovement::with(['product', 'user'])->latest('id')->paginate(30, ['*'], 'ledger_page');
 
-        return view('planb.audit', ['activities' => $activities, 'movements' => $movements, 'verification' => $integrity->verify()]);
+        $activityItems = [];
+        $itemSources = [
+            'product' => ['products', 'id', 'id'],
+            'sale' => ['sale_items', 'sale_id', 'product_id'],
+            'receipt' => ['inventory_movements', 'reference_id', 'product_id'],
+            'inventory_movement' => ['inventory_movements', 'id', 'product_id'],
+            'stock_count' => ['stock_counts', 'id', 'product_id'],
+            'alert' => ['discrepancy_alerts', 'id', 'product_id'],
+        ];
+        foreach ($itemSources as $type => [$table, $referenceColumn, $productColumn]) {
+            $referenceIds = $activities->getCollection()->where('reference_type', $type)->pluck('reference_id');
+            if ($referenceIds->isEmpty()) {
+                continue;
+            }
+            $items = DB::table($table.' as source')
+                ->join('products as item', 'item.id', '=', 'source.'.$productColumn)
+                ->whereIn('source.'.$referenceColumn, $referenceIds)
+                ->when($type === 'receipt', fn ($query) => $query->where('source.reference_type', 'receipt'))
+                ->get(['source.'.$referenceColumn.' as reference_id', 'item.name']);
+            foreach ($items->groupBy('reference_id') as $referenceId => $names) {
+                $activityItems[$type][$referenceId] = $names->pluck('name')->unique()->implode(', ');
+            }
+        }
+
+        return view('planb.audit', ['activities' => $activities, 'activityItems' => $activityItems, 'movements' => $movements, 'verification' => $integrity->verify()]);
     }
 
     /** @return array{CarbonImmutable,CarbonImmutable} */
@@ -188,13 +212,13 @@ class PlanBController extends Controller
             return response()->streamDownload(function () use ($sales, $day, $total): void {
                 $stream = fopen('php://output', 'w');
                 fwrite($stream, "\xEF\xBB\xBF");
-                fputcsv($stream, ['Tarikh Malaysia', 'No transaksi', 'Cashier', 'Masa Malaysia', 'Jumlah RM'], ',', '"', '');
+                fputcsv($stream, ['Date', 'Transaction', 'Staff Member', 'Date / Time', 'Total (RM)'], ',', '"', '');
                 foreach ($sales as $sale) {
                     $cells = [$day, $sale->transaction_no, $sale->cashier?->name ?? '', $sale->created_at->timezone('Asia/Kuala_Lumpur')->format('Y-m-d H:i:s'), $sale->total_amount];
                     $cells = array_map(fn ($value) => preg_match('/^[\s\x00-\x1f]*[=+@-]/u', (string) $value) ? "'".$value : $value, $cells);
                     fputcsv($stream, $cells, ',', '"', '');
                 }
-                fputcsv($stream, ['', '', '', 'Jumlah jualan completed', $total], ',', '"', '');
+                fputcsv($stream, ['', '', '', 'Sales Total', $total], ',', '"', '');
                 fclose($stream);
             }, 'jualan-'.$day.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
         }

@@ -3,8 +3,8 @@
     <div class="flex flex-col gap-6">
 
         <x-auth-header
-            :title="__('Log masuk')"
-            :description="__('Gunakan email dan kata laluan akaun anda')"
+            :title="__('Log In')"
+            :description="__('Enter your email and password')"
         />
 
         {{-- Session Status --}}
@@ -25,7 +25,7 @@
             {{-- Email --}}
             <flux:input
                 name="email"
-                :label="__('Email login')"
+                :label="__('Email')"
                 :value="old('email')"
                 type="email"
                 required
@@ -34,16 +34,16 @@
                 placeholder="email@example.com"
             />
 
-            {{-- Kata laluan --}}
+            {{-- Password --}}
             <div class="relative">
 
                 <flux:input
                     name="password"
-                    :label="__('Kata laluan')"
+                    :label="__('Password')"
                     type="password"
                     required
                     autocomplete="current-password"
-                    :placeholder="__('Kata laluan')"
+                    :placeholder="__('Password')"
                     viewable
                 />
 
@@ -53,7 +53,7 @@
                         :href="route('password.request')"
                         wire:navigate
                     >
-                        {{ __('Lupa kata laluan?') }}
+                        {{ __('Forgot Password?') }}
                     </flux:link>
                 @endif
 
@@ -62,7 +62,7 @@
             {{-- Remember Me --}}
             <flux:checkbox
                 name="remember"
-                :label="__('Ingat saya')"
+                :label="__('Remember me')"
                 :checked="old('remember')"
             />
 
@@ -73,14 +73,14 @@
                 class="w-full"
                 data-test="login-button"
             >
-                {{ __('Log masuk') }}
+                {{ __('Log In') }}
             </flux:button>
 
         </form>
 
         <div class="text-center">
             <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                Untuk pengguna yang diberi akses
+                Sign in to manage your sales and stock.
             </p>
         </div>
 
