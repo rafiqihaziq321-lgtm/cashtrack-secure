@@ -4,8 +4,10 @@ use App\Models\DiscrepancyAlert;
 use App\Models\InventoryMovement;
 use App\Models\Product;
 use App\Models\Role;
+use App\Models\Sale;
 use App\Models\User;
 use App\Services\InventoryService;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -151,3 +153,74 @@ test('public account pages use the CashTrack Secure brand without demo guidance'
     $response->assertOk()->assertSee('CashTrack Secure')->assertDontSee('Plan B')
         ->assertDontSee('demonstrasi')->assertDontSee('SMTP')->assertDontSee('pemasang');
 })->with(['/', '/login', '/forgot-password', '/reset-password/example-token']);
+
+test('reports use singular only for one transaction', function (int $count, string $label) {
+    $this->travelTo(CarbonImmutable::parse('2026-09-18 04:00:00', 'UTC'));
+    $owner = ownerUiUser();
+    $this->actingAs($owner);
+    for ($index = 0; $index < $count; $index++) {
+        Sale::create(['transaction_no' => 'REPORT-'.$index, 'cashier_id' => $owner->id, 'total_amount' => '2.50', 'status' => 'completed']);
+    }
+
+    $response = $this->get(route('owner.reports.index', ['day' => '2026-09-18']));
+
+    $response->assertSee('<p>'.$label.'</p>', false);
+})->with([[0, '0 transactions'], [1, '1 transaction'], [2, '2 transactions']]);
+
+test('staff access uses enabled and disabled labels while keeping boolean values', function () {
+    $owner = ownerUiUser();
+    $this->actingAs($owner);
+    $cashier = User::factory()->create(['role_id' => Role::firstOrCreate(['name' => 'Cashier'])->id, 'is_active' => false]);
+    app(InventoryService::class)->audit($owner->id, 'akaun.dikemas_kini', 'user', $cashier->id, ['is_active' => true], ['is_active' => false]);
+
+    $this->get(route('owner.users.index'))->assertSee('Enabled')->assertSee('Disabled')
+        ->assertDontSee('Available')->assertDontSee('Unavailable');
+    foreach ([route('owner.users.create'), route('owner.users.edit', $cashier)] as $url) {
+        $response = $this->get($url);
+        $options = ownerUiDocument($response->getContent())->query('//select[@name="is_active"]/option');
+        expect(array_map(fn (DOMElement $option): array => [$option->getAttribute('value'), trim($option->textContent)], iterator_to_array($options)))
+            ->toBe([['1', 'Enabled'], ['0', 'Disabled']]);
+    }
+    $this->get(route('owner.audit.index'))->assertSee('Enabled')->assertSee('Disabled')->assertDontSee('Unavailable');
+    $this->view('planb.message', ['message' => 'Akaun ini dinyahaktifkan. Hubungi Owner.'])->assertSee('Your access is disabled.');
+    $this->view('planb.message', ['message' => 'Akaun dikekalkan untuk sejarah audit. Owner boleh menyahaktif akaun Cashier.'])->assertSee('The Owner can disable staff access.');
+});
+
+test('local presentation wording preserves stored notes and audit evidence', function () {
+    $owner = ownerUiUser();
+    $this->actingAs($owner);
+    $note = 'Data contoh SV: 20 roti dan 10 kek mini; bukan data client.';
+    $receipt = app(InventoryService::class)->receive($owner, [
+        'submission_key' => (string) Str::uuid(), 'purpose' => 'OPENING', 'notes' => $note,
+        'items' => [['name' => 'Roti coklat demo', 'unit' => 'biji', 'selling_price' => '2.50', 'reorder_level' => 2, 'quantity' => 20]],
+    ]);
+    Product::firstOrFail()->update(['name' => 'Roti Coklat']);
+    $movements = DB::table('inventory_movements')->orderBy('id')->get()->toJson();
+    $activities = DB::table('activity_logs')->orderBy('id')->get()->toJson();
+    $this->app->detectEnvironment(fn (): string => 'local');
+
+    $receiptResponse = $this->get(route('owner.receipts.show', $receipt));
+    $activityResponse = $this->get(route('owner.audit.index'));
+
+    $receiptResponse->assertSee('Opening stock: 20 chocolate buns and 10 mini cakes.')->assertDontSee('Data contoh SV');
+    $document = ownerUiDocument($activityResponse->getContent());
+    foreach ($document->query('//main//table') as $table) {
+        expect($table->textContent)->toContain('Opening stock: 20 chocolate buns and 10 mini cakes.')
+            ->not->toContain('Data contoh SV')->not->toContain('Roti coklat demo');
+    }
+    expect($document->query('//details[summary[text()="Technical details"]]')->item(0)->textContent)->toContain($note);
+    expect(DB::table('inventory_movements')->orderBy('id')->get()->toJson())->toBe($movements);
+    expect(DB::table('activity_logs')->orderBy('id')->get()->toJson())->toBe($activities);
+});
+
+test('presentation note replacements are exact and limited to local use', function (string $environment, string $expected) {
+    $this->app->detectEnvironment(fn (): string => $environment);
+
+    $this->view('planb.message', ['message' => 'Demo SV: dua bungkusan roti rosak ketika pemeriksaan.'])->assertSee($expected);
+    $this->view('planb.message', ['message' => 'Delivery note <script>alert(1)</script>'])
+        ->assertSee('Delivery note <script>alert(1)</script>')->assertDontSee('<script>', false);
+    $this->view('planb.message', ['message' => 'Demo SV: a different original note'])->assertSee('Demo SV: a different original note');
+})->with([
+    ['local', 'Two packs of chocolate buns were damaged during inspection.'],
+    ['production', 'Demo SV: dua bungkusan roti rosak ketika pemeriksaan.'],
+]);

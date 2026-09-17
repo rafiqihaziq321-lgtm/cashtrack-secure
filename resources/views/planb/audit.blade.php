@@ -24,7 +24,7 @@
         $reason = $after['note'] ?? $after['notes'] ?? null;
     @endphp
     <tr>
-        <td><strong>{{ $actionLabels[$activity->action] ?? 'Activity recorded' }}</strong><br>{{ $itemName ?: 'Account activity' }}</td>
+        <td><strong>{{ $actionLabels[$activity->action] ?? 'Activity recorded' }}</strong><br>@include('planb.message', ['message' => $itemName ?: 'Account activity'])</td>
         <td>{{ $activity->name ?? 'System' }}<br><small>{{ \Carbon\CarbonImmutable::parse($activity->created_at, 'UTC')->timezone('Asia/Kuala_Lumpur')->format('d M Y, g:i a') }}</small></td>
         <td>@include('planb.activity-values', ['values' => $before])</td>
         <td>@include('planb.activity-values', ['values' => $after])</td>
@@ -32,7 +32,7 @@
             @if(isset($after['reason']))
                 {{ ['DAMAGED' => 'Damaged', 'EXPIRED' => 'Expired', 'SAMPLE' => 'Sample', 'OWN_USE' => 'Own Use'][$after['reason']] ?? 'Stock removal' }}<br>
             @endif
-            {{ $reason ?: 'No reason recorded' }}
+            @include('planb.message', ['message' => $reason ?: 'No reason recorded'])
         </td>
     </tr>
 @empty

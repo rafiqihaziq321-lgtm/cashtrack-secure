@@ -13,8 +13,6 @@
             :status="session('status')"
         />
 
-        <x-passkey-verify />
-
         <form
             method="POST"
             action="{{ route('login.store') }}"

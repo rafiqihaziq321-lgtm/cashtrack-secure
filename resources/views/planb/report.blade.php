@@ -12,7 +12,7 @@
 </form>
 <div class="ct-panel">
     <h2>{{ \Carbon\CarbonImmutable::parse($day)->format('j F Y') }}</h2>
-    <p>Sales Total</p><p class="ct-number">RM {{ $total }}</p><p>{{ $sales->count() }} transactions</p>
+    <p>Sales Total</p><p class="ct-number">RM {{ $total }}</p><p>{{ $sales->count() }} {{ $sales->count() === 1 ? 'transaction' : 'transactions' }}</p>
     <div class="ct-table"><table><thead><tr><th>Transaction</th><th>Time</th><th>Staff Member</th><th>Total (RM)</th></tr></thead><tbody>
     @forelse($sales as $sale)
         <tr><td><a href="{{ route('sales.show', $sale) }}">{{ $sale->transaction_no }}</a></td><td>{{ $sale->created_at->timezone('Asia/Kuala_Lumpur')->format('g:i a') }}</td><td>{{ $sale->cashier->name }}</td><td>{{ $sale->total_amount }}</td></tr>
