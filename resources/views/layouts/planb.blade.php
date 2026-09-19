@@ -10,9 +10,13 @@
     </style>
     @livewireStyles
 </head>
-<body>
-<header><div class="ct-wrap"><div class="ct-actions" style="justify-content:space-between">
-    <a href="{{ route('home') }}" style="font-size:1.3rem;font-weight:750">CashTrack Secure</a>
+<body @if(auth()->user()?->role?->name === 'Owner') class="ct-owner{{ request()->routeIs('owner.dashboard', 'owner.products.*', 'owner.stock-in.*', 'owner.receipts.*', 'owner.stock-counts.*', 'owner.alerts.*', 'withdrawals.*') ? ' ct-refresh-page' : '' }}" @endif>
+<a class="ct-skip-link" href="#main-content">Skip to content</a>
+@if(auth()->user()?->role?->name === 'Owner')
+    @include('planb.owner-shell')
+@else
+<header><div class="ct-wrap"><div class="ct-actions ct-header-top" style="justify-content:space-between">
+    <a class="ct-brand" href="{{ route('home') }}" style="font-size:1.3rem;font-weight:750">CashTrack Secure</a>
     @auth
         <details class="ct-account">
             <summary>{{ auth()->user()->name }} · Account</summary>
@@ -40,7 +44,8 @@
     @endif
 </nav>
 @endauth</div></header>
-<main class="ct-wrap">
+@endif
+<main id="main-content" class="ct-wrap" tabindex="-1">
     @if(session('success'))<div role="status" class="ct-alert">@include('planb.message', ['message' => session('success')])</div>@endif
     @if(session('status'))<div role="status" class="ct-alert">@include('planb.message', ['message' => session('status')])</div>@endif
     @if($errors->any())<div role="alert" class="ct-alert ct-error"><strong>Please check the following before saving:</strong><ul>@foreach($errors->all() as $error)<li>@include('planb.message', ['message' => $error])</li>@endforeach</ul></div>@endif
@@ -50,7 +55,7 @@
         @endif
     @endauth
     @yield('content')
-    <footer class="ct-muted" style="margin-top:36px;border-top:1px solid #dbe3e6;padding-top:15px">CashTrack Secure</footer>
+    <footer class="ct-muted ct-footer" style="margin-top:36px;border-top:1px solid #dbe3e6;padding-top:15px">CashTrack Secure</footer>
 </main>
 @stack('scripts')
 @persist('toast')

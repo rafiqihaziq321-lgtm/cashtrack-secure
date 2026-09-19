@@ -27,6 +27,66 @@ function ownerUiDocument(string $html): DOMXPath
     return new DOMXPath($document);
 }
 
+test('refreshed owner dashboard presents existing totals stock issues and quick actions', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-20 04:00:00', 'UTC'));
+    $owner = ownerUiUser();
+    $this->actingAs($owner);
+    $inventory = app(InventoryService::class);
+    $inventory->receive($owner, ['submission_key' => (string) Str::uuid(), 'purpose' => 'STOCK_IN', 'items' => [
+        ['name' => 'Oat Bun', 'unit' => 'biji', 'selling_price' => '2.50', 'reorder_level' => 5, 'quantity' => 3],
+    ]]);
+    $product = Product::firstOrFail();
+    $inventory->sell($owner, ['submission_key' => (string) Str::uuid(), 'items' => [['product_id' => $product->id, 'quantity' => 1]]]);
+    $inventory->count($owner, ['submission_key' => (string) Str::uuid(), 'product_id' => $product->id, 'physical_quantity' => 1, 'count_token' => $inventory->countToken($owner, $product->id)]);
+
+    $response = $this->get(route('owner.dashboard'));
+
+    $response->assertOk()->assertSee('1 transaction today')->assertSee('Oat Bun');
+    $document = ownerUiDocument($response->getContent());
+    expect(trim($document->query('//section[@aria-labelledby="sales-heading"]/p[1]')->item(0)->textContent))->toBe('RM 2.50');
+    expect(trim($document->query('//section[@aria-labelledby="low-stock-heading"]/p[1]')->item(0)->textContent))->toBe('1');
+    expect(trim($document->query('//section[@aria-labelledby="issues-heading"]/p[1]')->item(0)->textContent))->toBe('1');
+    $row = $document->query('//section[@aria-labelledby="restock-heading"]//tbody/tr')->item(0);
+    expect($row->textContent)->toContain('2 piece')->toContain($product->sku);
+    $actions = $document->query('//section[@aria-labelledby="quick-actions-heading"]//a');
+    expect(array_map(fn (DOMElement $link): string => $link->getAttribute('href'), iterator_to_array($actions)))
+        ->toBe([route('cashier.sales.create'), route('owner.stock-in.create'), route('owner.stock-counts.create')]);
+    expect(trim($document->query('//nav[@aria-label="Main navigation"]/a[@aria-current="page"]')->item(0)->textContent))->toBe('Dashboard');
+});
+
+test('refreshed inventory keeps search item values availability and edit destinations', function () {
+    $owner = ownerUiUser();
+    $this->actingAs($owner);
+    app(InventoryService::class)->receive($owner, ['submission_key' => (string) Str::uuid(), 'purpose' => 'STOCK_IN', 'items' => [
+        ['name' => 'Oat Bun <Fresh>', 'unit' => 'biji', 'selling_price' => '2.50', 'reorder_level' => 5, 'quantity' => 12],
+        ['name' => 'Mini Cake', 'unit' => 'biji', 'selling_price' => '4.00', 'reorder_level' => 3, 'quantity' => 7],
+    ]]);
+    $product = Product::where('name', 'Oat Bun <Fresh>')->firstOrFail();
+    Product::where('name', 'Mini Cake')->update(['is_active' => false]);
+
+    $response = $this->get(route('owner.products.index'));
+
+    $response->assertOk()->assertSee('Oat Bun <Fresh>')->assertDontSee('<Fresh>', false)->assertSee('Available')->assertSee('Unavailable');
+    $document = ownerUiDocument($response->getContent());
+    $rows = $document->query('//div[@aria-label="Inventory items"]//tbody/tr');
+    expect($rows->length)->toBe(2);
+    expect($rows->item(1)->textContent)->toContain($product->sku)->toContain('RM 2.50')->toContain('12')->toContain('5');
+    expect($document->query('//a[@aria-label="Edit Oat Bun <Fresh>"]')->item(0)->getAttribute('href'))->toBe(route('owner.products.edit', $product));
+    $search = $this->get(route('owner.products.index', ['q' => 'Oat Bun']));
+    $search->assertSee('Oat Bun &lt;Fresh&gt;', false)->assertDontSee('Mini Cake')->assertSee('value="Oat Bun"', false)->assertSee('Clear search');
+    expect(trim(ownerUiDocument($search->getContent())->query('//nav[@aria-label="Inventory navigation"]/a[@aria-current="page"]')->item(0)->textContent))->toBe('Items & Current Stock');
+});
+
+test('refreshed owner pages explain empty inventory search and restock states', function () {
+    $this->actingAs(ownerUiUser());
+
+    $this->get(route('owner.dashboard'))->assertSee('No items are running low.');
+    $this->get(route('owner.products.index'))->assertSee('Your inventory is ready for its first item.')
+        ->assertSee('Use Receive Stock to add item details and the received quantity together.');
+    $this->get(route('owner.products.index', ['q' => 'Missing item']))->assertSee('No items match “Missing item”.')
+        ->assertSee('Try another name, Item Code or barcode.')->assertSee('Clear search');
+});
+
 test('owner pages share business navigation without development branding', function (string $path) {
     $this->actingAs(ownerUiUser())->withSession(['auth.password_confirmed_at' => time()]);
 
@@ -40,6 +100,8 @@ test('owner pages share business navigation without development branding', funct
     $links = $document->query('//nav[@aria-label="Main navigation"]/a');
     expect(array_map(fn (DOMNode $link): string => trim($link->textContent), iterator_to_array($links)))
         ->toBe(['Dashboard', 'Inventory', 'Sales', 'Reports', 'Staff', 'Activity']);
+    expect($document->query('//aside//nav[@id="owner-navigation"]/a/svg')->length)->toBe(6);
+    expect($document->query('//button[@aria-controls="owner-navigation" and @aria-expanded="false"]')->length)->toBe(1);
     $accountLinks = $document->query('//details[contains(@class, "ct-account")]//a');
     expect(array_map(fn (DOMNode $link): string => trim($link->textContent), iterator_to_array($accountLinks)))
         ->toBe(['Profile', 'Security']);
@@ -224,3 +286,48 @@ test('presentation note replacements are exact and limited to local use', functi
     ['local', 'Two packs of chocolate buns were damaged during inspection.'],
     ['production', 'Demo SV: dua bungkusan roti rosak ketika pemeriksaan.'],
 ]);
+
+test('inventory redesign keeps count removal editing and review form contracts', function () {
+    $owner = ownerUiUser();
+    $this->actingAs($owner);
+    $inventory = app(InventoryService::class);
+    $inventory->receive($owner, ['submission_key' => (string) Str::uuid(), 'purpose' => 'STOCK_IN', 'items' => [
+        ['name' => 'Oat Bun', 'unit' => 'biji', 'selling_price' => '2.50', 'reorder_level' => 5, 'quantity' => 10],
+    ]]);
+    $product = Product::firstOrFail();
+    $inventory->count($owner, ['submission_key' => (string) Str::uuid(), 'product_id' => $product->id, 'physical_quantity' => 9, 'notes' => 'Shelf count', 'count_token' => $inventory->countToken($owner, $product->id)]);
+    $alert = DiscrepancyAlert::firstOrFail();
+
+    foreach ([
+        [route('owner.stock-counts.create', ['product_id' => $product->id]), route('owner.stock-counts.store'), ['submission_key', 'product_id', 'count_token', 'recount_of', 'physical_quantity', 'notes']],
+        [route('withdrawals.create'), route('withdrawals.store'), ['submission_key', 'product_id', 'quantity', 'reason', 'notes']],
+        [route('owner.products.edit', $product), route('owner.products.update', $product), ['_method', 'submission_key', 'name', 'unit', 'selling_price', 'reorder_level', 'barcode', 'description', 'is_active']],
+        [route('owner.alerts.show', $alert), route('owner.alerts.review', $alert), ['submission_key', 'action', 'note']],
+    ] as [$url, $action, $fields]) {
+        $response = $this->get($url)->assertOk();
+        $document = ownerUiDocument($response->getContent());
+        $form = '//form[@method="post" and @action="'.$action.'"]';
+        expect($document->query($form)->length)->toBe(1);
+        expect($document->query($form.'//input[@name="_token"]')->length)->toBe(1);
+        foreach ($fields as $field) {
+            expect($document->query($form.'//*[@name="'.$field.'"]')->length)->toBe(1);
+        }
+    }
+    $this->get(route('owner.stock-counts.index'))->assertSee('Oat Bun')->assertSee('Shelf count')->assertSee('Shortage')->assertSee('Count Again');
+    $this->get(route('owner.alerts.index'))->assertSee('Oat Bun')->assertSee('Needs Review')->assertSee(route('owner.alerts.show', $alert));
+});
+
+test('inventory stock badges respect existing availability and low stock threshold', function (int $quantity, bool $available, bool $lowStock) {
+    $owner = ownerUiUser();
+    $this->actingAs($owner);
+    app(InventoryService::class)->receive($owner, ['submission_key' => (string) Str::uuid(), 'purpose' => 'STOCK_IN', 'items' => [
+        ['name' => 'Oat Bun', 'unit' => 'biji', 'selling_price' => '2.50', 'reorder_level' => 5, 'quantity' => $quantity],
+    ]]);
+    Product::firstOrFail()->update(['is_active' => $available]);
+
+    $response = $this->get(route('owner.products.index'));
+
+    $row = ownerUiDocument($response->getContent())->query('//div[@aria-label="Inventory items"]//tbody/tr')->item(0);
+    expect(str_contains($row->textContent, 'Low stock'))->toBe($lowStock);
+    expect($row->textContent)->toContain($available ? 'Available' : 'Unavailable');
+})->with([[5, true, true], [6, true, false], [5, false, false]]);

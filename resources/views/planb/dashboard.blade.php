@@ -1,6 +1,9 @@
 @extends('layouts.planb')
 @section('title', 'Dashboard')
 @section('content')
+@if(auth()->user()->role?->name === 'Owner')
+    @include('planb.owner-dashboard')
+@else
 <h1>Dashboard</h1>
 <p class="ct-muted">{{ \Carbon\CarbonImmutable::parse($day)->format('j F Y') }} @if(auth()->user()->role?->name === 'Cashier') · Your sales @endif</p>
 <div class="ct-grid">
@@ -32,4 +35,5 @@
         @endforelse
     </tbody></table></div>
 </section>
+@endif
 @endsection
