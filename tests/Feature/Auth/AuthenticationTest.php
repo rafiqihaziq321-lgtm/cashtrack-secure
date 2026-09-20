@@ -7,6 +7,8 @@ test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
 
     $response->assertOk()->assertDontSee('passkey', false)
+        ->assertSee('ct-auth-card')->assertSee('CashTrack Secure')->assertSee('name="remember"', false)
+        ->assertSee(route('password.request'))
         ->assertSee('name="email"', false)->assertSee('name="password"', false)
         ->assertSee('action="'.route('login.store').'"', false);
 });

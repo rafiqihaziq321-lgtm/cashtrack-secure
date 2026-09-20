@@ -10,10 +10,13 @@
     </style>
     @livewireStyles
 </head>
-<body @if(auth()->user()?->role?->name === 'Owner') class="ct-owner{{ request()->routeIs('owner.dashboard', 'owner.products.*', 'owner.stock-in.*', 'owner.receipts.*', 'owner.stock-counts.*', 'owner.alerts.*', 'withdrawals.*', 'cashier.sales.create', 'owner.reports.*', 'owner.audit.*') ? ' ct-refresh-page' : '' }}" @endif>
+@php($cashierRefresh = auth()->user()?->role?->name === 'Cashier' && request()->routeIs('cashier.dashboard', 'cashier.sales.create', 'withdrawals.create'))
+<body @if(auth()->user()?->role?->name === 'Owner') class="ct-owner ct-workspace{{ request()->routeIs('owner.dashboard', 'owner.products.*', 'owner.stock-in.*', 'owner.receipts.*', 'owner.stock-counts.*', 'owner.alerts.*', 'withdrawals.*', 'cashier.sales.create', 'owner.reports.*', 'owner.audit.*') ? ' ct-refresh-page' : '' }}" @elseif($cashierRefresh) class="ct-cashier ct-workspace ct-refresh-page" @endif>
 <a class="ct-skip-link" href="#main-content">Skip to content</a>
 @if(auth()->user()?->role?->name === 'Owner')
     @include('planb.owner-shell')
+@elseif($cashierRefresh)
+    @include('planb.cashier-shell')
 @else
 <header><div class="ct-wrap"><div class="ct-actions ct-header-top" style="justify-content:space-between">
     <a class="ct-brand" href="{{ route('home') }}" style="font-size:1.3rem;font-weight:750">CashTrack Secure</a>

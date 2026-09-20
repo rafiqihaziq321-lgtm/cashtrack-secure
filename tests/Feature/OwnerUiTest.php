@@ -183,6 +183,59 @@ test('refreshed sale keeps editable selected items and the existing submission c
     expect($document->query('//template[@id="batch-template"]//*[@data-row]')->length)->toBe(1);
 })->with(['Owner', 'Cashier']);
 
+test('cashier refresh exposes only cashier navigation and preserves removal fields', function (string $route, string $active) {
+    $cashier = User::factory()->create(['role_id' => Role::firstOrCreate(['name' => 'Cashier'])->id, 'is_active' => true]);
+    $this->actingAs($cashier);
+
+    $response = $this->get(route($route))->assertOk();
+
+    $document = ownerUiDocument($response->getContent());
+    $links = $document->query('//nav[@aria-label="Main navigation"]/a');
+    expect(array_map(fn (DOMNode $link): string => trim($link->textContent), iterator_to_array($links)))
+        ->toBe(['Dashboard', 'Sales', 'Remove Stock']);
+    expect(trim($document->query('//nav[@aria-label="Main navigation"]/a[@aria-current="page"]')->item(0)->textContent))->toBe($active);
+    expect($document->query('//a[contains(@href, "/owner/")]')->length)->toBe(0);
+    expect($document->query('//button[@aria-controls="cashier-navigation" and @aria-expanded="false"]')->length)->toBe(1);
+    $account = '//details[contains(@class, "ct-account")]';
+    expect($document->query($account.'//a[@href="'.route('profile.edit').'"]')->length)->toBe(1);
+    expect($document->query($account.'//a[@href="'.route('security.edit').'"]')->length)->toBe(1);
+    expect($document->query($account.'//form[@method="post" and @action="'.route('logout').'"]')->length)->toBe(1);
+    if ($route === 'withdrawals.create') {
+        $form = '//form[@method="post" and @action="'.route('withdrawals.store').'"]';
+        foreach (['_token', 'submission_key', 'product_id', 'quantity', 'reason', 'notes'] as $name) {
+            expect($document->query($form.'//*[@name="'.$name.'"]')->length)->toBe(1);
+        }
+        $reasons = $document->query($form.'//select[@name="reason"]/option');
+        expect(array_map(fn (DOMElement $option): string => $option->getAttribute('value'), iterator_to_array($reasons)))
+            ->toBe(['DAMAGED', 'EXPIRED', 'SAMPLE', 'OWN_USE']);
+        $notes = $document->query($form.'//textarea[@name="notes"]')->item(0);
+        expect([$notes->getAttribute('minlength'), $notes->getAttribute('maxlength'), $notes->hasAttribute('required')])->toBe(['3', '1000', true]);
+    }
+})->with([
+    ['cashier.dashboard', 'Dashboard'], ['cashier.sales.create', 'Sales'], ['withdrawals.create', 'Remove Stock'],
+]);
+
+test('cashier dashboard displays only their sales and the existing low stock values', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-18 04:00:00', 'UTC'));
+    $owner = ownerUiUser();
+    $cashier = User::factory()->create(['role_id' => Role::firstOrCreate(['name' => 'Cashier'])->id, 'is_active' => true]);
+    Sale::create(['transaction_no' => 'CASHIER-UI', 'cashier_id' => $cashier->id, 'total_amount' => '7.50', 'status' => 'completed']);
+    Sale::create(['transaction_no' => 'OWNER-UI', 'cashier_id' => $owner->id, 'total_amount' => '45.00', 'status' => 'completed']);
+    app(InventoryService::class)->receive($owner, ['submission_key' => (string) Str::uuid(), 'purpose' => 'STOCK_IN', 'items' => [
+        ['name' => 'Oat Bun <Fresh>', 'unit' => 'biji', 'selling_price' => '2.50', 'reorder_level' => 5, 'quantity' => 3],
+    ]]);
+
+    $response = $this->actingAs($cashier)->get(route('cashier.dashboard'))->assertOk();
+
+    $document = ownerUiDocument($response->getContent());
+    expect($document->query('//section[@aria-labelledby="cashier-sales-heading"]')->item(0)->textContent)
+        ->toContain('7.50')->toContain('1 transaction')->not->toContain('45.00');
+    expect($document->query('//section[@aria-labelledby="cashier-low-heading"]')->item(0)->textContent)->toContain('1');
+    $row = $document->query('//div[@aria-label="Items to restock"]//tbody/tr')->item(0);
+    expect($row->textContent)->toContain('Oat Bun <Fresh>')->toContain('3')->toContain('5')->toContain('Let the Owner know');
+    $response->assertDontSee('<Fresh>', false);
+});
+
 test('activity history shows item names readable changes and reasons while preserving stored evidence', function () {
     $owner = ownerUiUser();
     $this->actingAs($owner);

@@ -8,6 +8,7 @@ test('confirm password screen can be rendered', function () {
     $response = $this->actingAs($user)->get(route('password.confirm'));
 
     $response->assertOk()->assertDontSee('passkey', false)
+        ->assertSee('ct-auth-card')->assertSee('CashTrack Secure')
         ->assertSee('name="password"', false)
         ->assertSee('action="'.route('password.confirm.store').'"', false);
 });
