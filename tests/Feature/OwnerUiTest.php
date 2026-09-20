@@ -345,6 +345,21 @@ test('staff access uses enabled and disabled labels while keeping boolean values
         ->assertDontSee('Available')->assertDontSee('Unavailable');
     foreach ([route('owner.users.create'), route('owner.users.edit', $cashier)] as $url) {
         $response = $this->get($url);
+        $response->assertOk()->assertSee('Staff details')->assertSee('Sign-in access');
+        $document = ownerUiDocument($response->getContent());
+        $form = $document->query('//main//form')->item(0);
+        $isEdit = $url === route('owner.users.edit', $cashier);
+        expect($form->getAttribute('action'))->toBe($isEdit ? route('owner.users.update', $cashier) : route('owner.users.store'));
+        expect($form->getAttribute('method'))->toBe('post');
+        foreach (['_token', 'name', 'email', 'password', 'password_confirmation', 'is_active'] as $field) {
+            expect($document->query('//main//form//*[@name="'.$field.'"]')->length)->toBe(1);
+        }
+        $password = $document->query('//main//input[@name="password"]')->item(0);
+        expect([$password->getAttribute('minlength'), $password->getAttribute('maxlength'), $password->hasAttribute('required')])->toBe(['12', '200', ! $isEdit]);
+        if ($isEdit) {
+            expect($document->query('//main//input[@name="_method"]')->item(0)->getAttribute('value'))->toBe('PUT');
+            expect($document->query('//main//input[@name="email"]')->item(0)->getAttribute('value'))->toBe($cashier->email);
+        }
         $options = ownerUiDocument($response->getContent())->query('//select[@name="is_active"]/option');
         expect(array_map(fn (DOMElement $option): array => [$option->getAttribute('value'), trim($option->textContent)], iterator_to_array($options)))
             ->toBe([['1', 'Enabled'], ['0', 'Disabled']]);
@@ -352,6 +367,61 @@ test('staff access uses enabled and disabled labels while keeping boolean values
     $this->get(route('owner.audit.index'))->assertSee('Enabled')->assertSee('Disabled')->assertDontSee('Unavailable');
     $this->view('planb.message', ['message' => 'Akaun ini dinyahaktifkan. Hubungi Owner.'])->assertSee('Your access is disabled.');
     $this->view('planb.message', ['message' => 'Akaun dikekalkan untuk sejarah audit. Owner boleh menyahaktif akaun Cashier.'])->assertSee('The Owner can disable staff access.');
+});
+
+test('welcome and account presentation preserve guest and operational navigation', function (?string $role) {
+    if ($role !== null) {
+        $this->actingAs(User::factory()->create(['role_id' => Role::firstOrCreate(['name' => $role])->id, 'is_active' => true]))
+            ->withSession(['auth.password_confirmed_at' => time()]);
+    }
+
+    $welcome = $this->get(route('home'))->assertOk()->assertSee('Your sales and stock,');
+    $welcomeDocument = ownerUiDocument($welcome->getContent());
+    expect($welcomeDocument->query('//main//a[@href="'.route($role === null ? 'login' : 'dashboard').'"]')->length)->toBe(1);
+    if ($role === null) {
+        expect($welcomeDocument->query('//main//a[@href="'.route('password.request').'"]')->length)->toBe(1);
+        expect($welcomeDocument->query('//nav[@aria-label="Main navigation"]')->length)->toBe(0);
+
+        return;
+    }
+
+    foreach ([['profile.edit', 'updateProfileInformation', ['name', 'email']], ['security.edit', 'updatePassword', ['current_password', 'password', 'password_confirmation']]] as [$route, $action, $fields]) {
+        $response = $this->get(route($route))->assertOk()->assertSee('Your Account')->assertSee('ct-account-page');
+        $response->assertSee('wire:submit="'.$action.'"', false);
+        foreach ($fields as $field) {
+            $response->assertSee('wire:model="'.$field.'"', false);
+        }
+        $document = ownerUiDocument($response->getContent());
+        $navigation = $document->query('//nav[@aria-label="Main navigation"]/a');
+        expect(array_map(fn (DOMNode $link): string => trim($link->textContent), iterator_to_array($navigation)))
+            ->toBe($role === 'Owner' ? ['Dashboard', 'Inventory', 'Sales', 'Reports', 'Staff', 'Activity'] : ['Dashboard', 'Sales', 'Remove Stock']);
+        foreach (['profile.edit', 'security.edit'] as $settingsRoute) {
+            expect($document->query('//main//nav[@aria-label="Settings"]//a[@href="'.route($settingsRoute).'"]')->length)->toBe(1);
+        }
+        $response->assertDontSee('Repository')->assertDontSee('Documentation');
+    }
+})->with([null, 'Owner', 'Cashier']);
+
+test('activity sign in and sign out remain readable with original records collapsed', function () {
+    $owner = ownerUiUser();
+    $inventory = app(InventoryService::class);
+    foreach (['akaun.log_masuk', 'akaun.log_keluar'] as $action) {
+        $inventory->audit($owner->id, $action, 'user', $owner->id, [], []);
+    }
+    $storedActivities = DB::table('activity_logs')->orderBy('id')->get()->toJson();
+
+    $response = $this->actingAs($owner)->get(route('owner.audit.index'))->assertOk();
+
+    $document = ownerUiDocument($response->getContent());
+    $rows = $document->query('//section[@aria-label="Recent activity"]//tr[@class="ct-access-event"]');
+    expect($rows->length)->toBe(2);
+    expect($rows->item(0)->textContent)->toContain('Signed out')->toContain($owner->name);
+    expect($rows->item(1)->textContent)->toContain('Signed in')->toContain($owner->name);
+    $technical = '//details[summary[text()="Technical details"]]';
+    expect($document->query($technical)->item(0)->hasAttribute('open'))->toBeFalse();
+    expect($document->query($technical.'/details[summary[text()="Verification data and original records"]]')->item(0)->hasAttribute('open'))->toBeFalse();
+    expect($document->query($technical.'//pre')->length)->toBe(2);
+    expect(DB::table('activity_logs')->orderBy('id')->get()->toJson())->toBe($storedActivities);
 });
 
 test('local presentation wording preserves stored notes and audit evidence', function () {

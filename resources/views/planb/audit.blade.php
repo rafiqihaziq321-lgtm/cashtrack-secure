@@ -23,7 +23,7 @@
         $itemName = $activityItems[$activity->reference_type][$activity->reference_id] ?? ($after['name'] ?? $before['name'] ?? null);
         $reason = $after['note'] ?? $after['notes'] ?? null;
     @endphp
-    <tr>
+    <tr @if(in_array($activity->action, ['akaun.log_masuk', 'akaun.log_keluar'], true)) class="ct-access-event" @endif>
         <td><div class="ct-event"><span class="ct-event-icon"><flux:icon.clock /></span><div><strong class="ct-item-name">{{ $actionLabels[$activity->action] ?? 'Activity recorded' }}</strong><span class="ct-item-meta">@include('planb.message', ['message' => $itemName ?: 'Account activity'])</span></div></div></td>
         <td><span class="ct-activity-person">{{ $activity->name ?? 'System' }}</span><span class="ct-item-meta">{{ \Carbon\CarbonImmutable::parse($activity->created_at, 'UTC')->timezone('Asia/Kuala_Lumpur')->format('d M Y, g:i a') }}</span></td>
         <td class="ct-previous-value">@include('planb.activity-values', ['values' => $before])</td>
@@ -45,8 +45,10 @@
 </section>
 <details class="ct-panel ct-technical-details">
     <summary>Technical details</summary>
+    <p>Optional checks for troubleshooting stock history. The everyday activity and stock changes are shown above.</p>
     <h2>Stock history verification</h2>
     <p>{{ ['LULUS' => 'Passed', 'GAGAL' => 'Failed', 'TIDAK LENGKAP' => 'Incomplete'][$verification['status']] ?? 'Unknown' }} · {{ $verification['checked'] }} records checked · {{ $verification['legacy'] }} older records · {{ $verification['unsigned'] }} unsigned records.</p>
+    <details><summary>Verification data and original records</summary>
     <p>Saved chain head: {{ $verification['head_matches'] ? 'matches' : 'does not match' }}. @if($verification['error'])First affected record: {{ $verification['error'] }}.@endif</p>
     <p>Hash checks can reveal changes to protected stock records. They do not verify the original input, and someone with full database access could rebuild the chain. Older records do not protect their ID or timestamp.</p>
     @foreach($activities as $activity)
@@ -55,5 +57,6 @@
             <pre class="ct-code">{{ json_encode(['previous' => json_decode($activity->before_values), 'new' => json_decode($activity->after_values)], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
         </details>
     @endforeach
+    </details>
 </details>
 @endsection

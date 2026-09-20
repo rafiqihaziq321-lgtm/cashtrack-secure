@@ -1,5 +1,5 @@
 @extends('layouts.planb')
 
 @section('content')
-    <div class="ct-panel">{{ $slot }}</div>
+    <div class="{{ request()->routeIs('profile.edit', 'security.edit') ? 'ct-account-page' : 'ct-panel' }}">{{ $slot }}</div>
 @endsection

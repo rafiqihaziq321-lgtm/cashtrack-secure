@@ -10,8 +10,8 @@
     </style>
     @livewireStyles
 </head>
-@php($cashierRefresh = auth()->user()?->role?->name === 'Cashier' && request()->routeIs('cashier.dashboard', 'cashier.sales.create', 'withdrawals.create'))
-<body @if(auth()->user()?->role?->name === 'Owner') class="ct-owner ct-workspace{{ request()->routeIs('owner.dashboard', 'owner.products.*', 'owner.stock-in.*', 'owner.receipts.*', 'owner.stock-counts.*', 'owner.alerts.*', 'withdrawals.*', 'cashier.sales.create', 'owner.reports.*', 'owner.audit.*') ? ' ct-refresh-page' : '' }}" @elseif($cashierRefresh) class="ct-cashier ct-workspace ct-refresh-page" @endif>
+@php($cashierRefresh = auth()->user()?->role?->name === 'Cashier' && request()->routeIs('cashier.dashboard', 'cashier.sales.create', 'withdrawals.create', 'profile.edit', 'security.edit', 'home'))
+<body @if(auth()->user()?->role?->name === 'Owner') class="ct-owner ct-workspace{{ request()->routeIs('owner.dashboard', 'owner.products.*', 'owner.stock-in.*', 'owner.receipts.*', 'owner.stock-counts.*', 'owner.alerts.*', 'withdrawals.*', 'cashier.sales.create', 'owner.reports.*', 'owner.audit.*', 'owner.users.create', 'owner.users.edit', 'profile.edit', 'security.edit', 'home') ? ' ct-refresh-page' : '' }}" @elseif($cashierRefresh) class="ct-cashier ct-workspace ct-refresh-page" @elseif(request()->routeIs('home')) class="ct-workspace ct-refresh-page ct-public" @endif>
 <a class="ct-skip-link" href="#main-content">Skip to content</a>
 @if(auth()->user()?->role?->name === 'Owner')
     @include('planb.owner-shell')
