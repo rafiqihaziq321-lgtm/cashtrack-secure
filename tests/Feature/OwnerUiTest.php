@@ -146,6 +146,43 @@ test('standalone item creation guides the owner into receiving', function () {
     expect($document->query('//main//a[@href="'.route('owner.stock-in.create').'"]')->length)->toBeGreaterThan(0);
 });
 
+test('refreshed sale keeps editable selected items and the existing submission contract', function (string $role) {
+    $owner = ownerUiUser();
+    app(InventoryService::class)->receive($owner, ['submission_key' => (string) Str::uuid(), 'purpose' => 'STOCK_IN', 'items' => [
+        ['name' => 'Oat Bun <Fresh>', 'unit' => 'biji', 'selling_price' => '2.50', 'reorder_level' => 2, 'quantity' => 10],
+    ]]);
+    $product = Product::firstOrFail();
+    $user = $role === 'Owner' ? $owner : User::factory()->create(['role_id' => Role::firstOrCreate(['name' => $role])->id, 'is_active' => true]);
+    $submissionKey = (string) Str::uuid();
+    $this->actingAs($user)->withSession(['_old_input' => [
+        'submission_key' => $submissionKey, 'items' => [['product_id' => $product->id, 'quantity' => 3]],
+    ]]);
+
+    $response = $this->get(route('cashier.sales.create'));
+
+    $response->assertOk()->assertSee('Sale summary')->assertSee('Selected items')->assertSee('Complete Sale')
+        ->assertSee('Oat Bun <Fresh>')->assertDontSee('<Fresh>', false);
+    $document = ownerUiDocument($response->getContent());
+    $form = '//form[@id="batch-form"]';
+    expect($document->query($form)->item(0)->getAttribute('action'))->toBe(route('cashier.sales.store'));
+    expect($document->query($form)->item(0)->getAttribute('method'))->toBe('post');
+    foreach (['_token', 'submission_key', 'items[0][product_id]', 'items[0][quantity]'] as $name) {
+        expect($document->query($form.'//input[@name="'.$name.'"]')->length)->toBe(1);
+    }
+    expect($document->query($form.'//input[@name="submission_key"]')->item(0)->getAttribute('value'))->toBe($submissionKey);
+    expect($document->query('//*[@id="batch-rows"]/*[@data-row]')->length)->toBe(1);
+    expect($document->query('//*[@id="batch-rows"]//*[@data-product]')->item(0)->getAttribute('value'))->toBe((string) $product->id);
+    $quantity = $document->query('//*[@id="batch-rows"]//*[@data-quantity]')->item(0);
+    expect([$quantity->getAttribute('value'), $quantity->getAttribute('min'), $quantity->getAttribute('max'), $quantity->hasAttribute('required')])
+        ->toBe(['3', '1', '1000000', true]);
+    expect($document->query($form.'//button[@type="submit"]')->length)->toBe(1);
+    expect(trim($document->query($form.'//button[@type="submit"]')->item(0)->textContent))->toBe('Complete Sale');
+    expect($document->query($form.'//*[@id="estimated-total" and @aria-live="polite"]')->length)->toBe(1);
+    expect($document->query($form.'//button[@id="add-row" and @type="button"]')->length)->toBe(1);
+    expect($document->query('//input[@id="scanner"]')->length)->toBe(1);
+    expect($document->query('//template[@id="batch-template"]//*[@data-row]')->length)->toBe(1);
+})->with(['Owner', 'Cashier']);
+
 test('activity history shows item names readable changes and reasons while preserving stored evidence', function () {
     $owner = ownerUiUser();
     $this->actingAs($owner);
@@ -177,6 +214,8 @@ test('activity history shows item names readable changes and reasons while prese
         expect($row->textContent)->toContain('Chocolate Bun');
     }
     expect($document->query('//details[summary[text()="Technical details"]]//pre')->length)->toBeGreaterThan(0);
+    expect($document->query('//details[summary[text()="Technical details"]]')->item(0)->hasAttribute('open'))->toBeFalse();
+    expect($document->query('//section[@aria-label="Recent activity" and @tabindex="0"]')->length)->toBe(1);
     expect(DB::table('activity_logs')->orderBy('id')->get()->toJson())->toBe($storedActivities);
     expect(InventoryMovement::orderBy('id')->pluck('record_hash')->all())->toBe($storedHashes);
 });
@@ -207,6 +246,11 @@ test('report renders business labels and keeps export and print controls', funct
     $response->assertOk()->assertSee('Sales Total')->assertSee('Transaction')->assertSee('Export CSV')
         ->assertSee('window.print()', false)->assertDontSee('Asia/Kuala_Lumpur')
         ->assertDontSee('completed')->assertDontSee('00:00');
+    $response->assertSee('No sales on this date.')->assertSee('Choose another date to view its sales and transactions.');
+    $document = ownerUiDocument($response->getContent());
+    expect($document->query('//form[@aria-label="Report filters" and @method="get"]//input[@name="day"]')->item(0)->getAttribute('value'))->toBe('2026-09-15');
+    expect($document->query('//a[contains(@href,"format=csv")]')->item(0)->getAttribute('href'))
+        ->toBe(route('owner.reports.index', ['day' => '2026-09-15', 'format' => 'csv']));
 });
 
 test('public account pages use the CashTrack Secure brand without demo guidance', function (string $path) {
@@ -227,6 +271,15 @@ test('reports use singular only for one transaction', function (int $count, stri
     $response = $this->get(route('owner.reports.index', ['day' => '2026-09-18']));
 
     $response->assertSee('<p>'.$label.'</p>', false);
+    $document = ownerUiDocument($response->getContent());
+    expect($document->query('//section[@aria-label="Daily sales summary"]')->item(0)->textContent)
+        ->toContain(number_format($count * 2.5, 2))->toContain('18 September 2026');
+    expect($document->query('//div[@aria-label="Sales transactions"]//tbody//a')->length)->toBe($count);
+    foreach (Sale::all() as $sale) {
+        $link = $document->query('//div[@aria-label="Sales transactions"]//a[@href="'.route('sales.show', $sale).'"]')->item(0);
+        expect($link->textContent)->toBe($sale->transaction_no);
+        expect($link->parentNode->parentNode->textContent)->toContain($owner->name)->toContain('12:00 pm')->toContain('2.50');
+    }
 })->with([[0, '0 transactions'], [1, '1 transaction'], [2, '2 transactions']]);
 
 test('staff access uses enabled and disabled labels while keeping boolean values', function () {

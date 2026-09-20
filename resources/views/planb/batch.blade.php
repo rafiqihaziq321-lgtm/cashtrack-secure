@@ -2,27 +2,42 @@
 @extends('layouts.planb')
 @section('title', $mode === 'sale' ? 'New Sale' : 'Receive Stock')
 @section('content')
-<div @if($mode === 'receipt') class="ct-page-heading" @endif><div><h1>{{ $mode === 'sale' ? 'New Sale' : 'Receive Stock' }}</h1>
+<div class="ct-page-heading"><div><h1>{{ $mode === 'sale' ? 'New Sale' : 'Receive Stock' }}</h1>
 <p>{{ $mode === 'sale' ? 'Add the items your customer is buying.' : 'Search or scan an item, then enter the received quantity. If it is new, choose New Item and add its details here.' }}</p></div></div>
-<div class="ct-panel {{ $mode === 'receipt' ? 'ct-scanner' : '' }}">
-@if($mode === 'receipt')<div><h2>Find an item</h2><p class="ct-muted">Scan a barcode or enter its Item Code.</p></div>@endif
+<div class="ct-panel ct-scanner {{ $mode === 'sale' ? 'ct-sale-scanner' : '' }}">
+<div><h2>Find an item</h2><p class="ct-muted">Scan a barcode or enter its Item Code.</p></div>
 <div><label class="ct-field">Scan or enter Item Code / barcode<input id="scanner" placeholder="Scan or type, then press Enter" autocomplete="off"></label><p id="scanner-status" role="status" class="ct-muted">You can also search by item name in each row below.</p></div></div>
 <datalist id="catalog-options">
 @foreach($products as $product)<option value="{{ $product->sku }} — {{ $product->name }}" data-id="{{ $product->id }}" data-code="{{ $product->sku }}" data-barcode="{{ $product->barcode }}" data-name="{{ $product->name }}" data-price="{{ $product->selling_price }}" data-unit="@include('planb.unit', ['unit' => $product->unit])">{{ $product->barcode }} · RM {{ $product->selling_price }} / @include('planb.unit', ['unit' => $product->unit])</option>
 @endforeach</datalist>
-<form method="post" action="{{ $mode === 'sale' ? route('cashier.sales.store') : route('owner.stock-in.store') }}" id="batch-form" class="ct-panel {{ $mode === 'receipt' ? 'ct-form-panel ct-receiving' : '' }}">
+<form method="post" action="{{ $mode === 'sale' ? route('cashier.sales.store') : route('owner.stock-in.store') }}" id="batch-form" class="ct-panel {{ $mode === 'receipt' ? 'ct-form-panel ct-receiving' : 'ct-sale-form' }}">
 @csrf
 <input type="hidden" name="submission_key" value="{{ old('submission_key', $submissionKey) }}">
 @if($mode === 'receipt')<section class="ct-form-section" aria-labelledby="delivery-heading"><h2 id="delivery-heading">Delivery details</h2><div class="ct-grid"><label class="ct-field">Receiving Type<select name="purpose"><option value="STOCK_IN" @selected(old('purpose') === 'STOCK_IN')>Delivery</option><option value="OPENING" @selected(old('purpose') === 'OPENING')>Opening Stock — first quantity for this item</option></select></label><label class="ct-field">Delivery Notes / Reference<textarea name="notes" maxlength="1000">{{ old('notes') }}</textarea></label></div></section>
 <section class="ct-form-section" aria-labelledby="receiving-items-heading"><h2 id="receiving-items-heading">Items to receive</h2>
+@endif
+@if($mode === 'sale')
+<div class="ct-section-heading"><div><h2>Sale summary</h2><p class="ct-muted">Review the selected items and quantities before completing the sale.</p></div></div>
+<div class="ct-sale-workspace"><section class="ct-sale-items" aria-labelledby="selected-items-heading"><h3 id="selected-items-heading">Selected items</h3>
 @endif
 <div id="batch-rows">
 @foreach(old('items', [['quantity'=>1]]) as $index => $item)
 @include('planb.batch-row', compact('index','item'))
 @endforeach</div>
 @if($mode === 'receipt')</section>@endif
-<div class="ct-actions {{ $mode === 'receipt' ? 'ct-form-actions' : '' }}"><button class="ct-button ct-secondary" type="button" id="add-row">Add Another Item</button><button class="ct-button" type="submit">{{ $mode === 'sale' ? 'Save Sale & View Receipt' : 'Save Received Stock' }}</button></div>
-<p id="estimated-total" class="ct-muted"></p></form>
+@if($mode === 'sale')
+<button class="ct-button ct-secondary" type="button" id="add-row"><flux:icon.plus />Add Another Item</button>
+</section>
+<section class="ct-sale-total" aria-labelledby="sale-total-heading"><span class="ct-metric-icon"><flux:icon.banknotes /></span><h2 id="sale-total-heading">Sale total</h2>
+<p id="estimated-total" aria-live="polite" aria-atomic="true"></p>
+<p class="ct-muted">Check the items and quantities, then complete the sale to view the receipt.</p>
+<button class="ct-button" type="submit"><flux:icon.check />Complete Sale</button>
+</section></div>
+@else
+<div class="ct-actions ct-form-actions"><button class="ct-button ct-secondary" type="button" id="add-row">Add Another Item</button><button class="ct-button" type="submit">Save Received Stock</button></div>
+<p id="estimated-total" class="ct-muted"></p>
+@endif
+</form>
 <template id="batch-template">
 @include('planb.batch-row', ['index'=>'__INDEX__', 'item'=>[]])</template>
 @endsection

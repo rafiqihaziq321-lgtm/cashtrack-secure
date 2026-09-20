@@ -10,7 +10,7 @@
     </style>
     @livewireStyles
 </head>
-<body @if(auth()->user()?->role?->name === 'Owner') class="ct-owner{{ request()->routeIs('owner.dashboard', 'owner.products.*', 'owner.stock-in.*', 'owner.receipts.*', 'owner.stock-counts.*', 'owner.alerts.*', 'withdrawals.*') ? ' ct-refresh-page' : '' }}" @endif>
+<body @if(auth()->user()?->role?->name === 'Owner') class="ct-owner{{ request()->routeIs('owner.dashboard', 'owner.products.*', 'owner.stock-in.*', 'owner.receipts.*', 'owner.stock-counts.*', 'owner.alerts.*', 'withdrawals.*', 'cashier.sales.create', 'owner.reports.*', 'owner.audit.*') ? ' ct-refresh-page' : '' }}" @endif>
 <a class="ct-skip-link" href="#main-content">Skip to content</a>
 @if(auth()->user()?->role?->name === 'Owner')
     @include('planb.owner-shell')

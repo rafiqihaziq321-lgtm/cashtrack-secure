@@ -65,7 +65,7 @@ select:focus[data-flux-control] {
     @apply size-4;
 } */
 
-/* Owner shell and the Dashboard / Inventory presentation. */
+/* Owner shell and refreshed workspace pages. */
 .ct-skip-link { position: fixed; top: 8px; left: 16px; z-index: 100; transform: translateY(-180%); padding: 10px 16px; border-radius: 8px; background: #143f40; color: white; }
 .ct-skip-link:focus { transform: translateY(0); }
 .ct-owner { --ct-border: #dfe5e2; --ct-ink: #1e2c27; --ct-muted: #65736c; padding-left: 224px; background: #f3f5f4; color: var(--ct-ink); font: 14px/1.5 ui-sans-serif, system-ui, sans-serif; }
@@ -188,6 +188,55 @@ select:focus[data-flux-control] {
 .ct-owner.ct-refresh-page .ct-receiving .ct-row [data-product-info]:empty { display: none; }
 .ct-owner.ct-refresh-page .ct-receiving .ct-row [data-remove] { color: #954545; background: #fff; border-color: #e5cccc; }
 .ct-owner.ct-refresh-page .ct-receiving #estimated-total:empty { display: none; }
+.ct-owner.ct-refresh-page .ct-sale-scanner { max-width: none; grid-template-columns: minmax(160px, .5fr) minmax(0, 1fr); }
+.ct-owner.ct-refresh-page .ct-sale-form { padding: 0; }
+.ct-owner.ct-refresh-page .ct-sale-form > .ct-section-heading { border-bottom: 1px solid var(--ct-border); }
+.ct-owner.ct-refresh-page .ct-sale-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 280px; }
+.ct-owner.ct-refresh-page .ct-sale-items { min-width: 0; padding: 18px; }
+.ct-owner.ct-refresh-page .ct-sale-items h3 { margin: 0 0 12px; color: var(--ct-muted); font-size: 11px; font-weight: 600; }
+.ct-owner.ct-refresh-page .ct-sale-items .ct-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px; align-items: start; gap: 0 14px; margin: 0 0 12px; padding: 14px; border-color: var(--ct-border); background: #fafcfb; }
+.ct-owner.ct-refresh-page .ct-sale-items .ct-field { margin-bottom: 0; }
+.ct-owner.ct-refresh-page .ct-sale-items [data-product-info] { margin: 5px 0 0; font-variant-numeric: tabular-nums; }
+.ct-owner.ct-refresh-page .ct-sale-items [data-product-info]:empty { display: none; }
+.ct-owner.ct-refresh-page .ct-sale-items [data-remove] { grid-column: 2; justify-self: end; min-height: 30px; margin-top: 8px; padding: 4px 8px; color: #954545; background: transparent; border-color: #e5cccc; font-size: 11px; }
+.ct-owner.ct-refresh-page .ct-sale-total { align-self: stretch; padding: 20px; background: #f7faf8; border-left: 1px solid var(--ct-border); border-radius: 0 0 10px 0; }
+.ct-owner.ct-refresh-page .ct-sale-total h2 { margin: 14px 0 8px; }
+.ct-owner.ct-refresh-page .ct-sale-total #estimated-total { margin: 0 0 16px; font-size: 24px; font-weight: 700; line-height: 1.4; letter-spacing: -.035em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ct-owner.ct-refresh-page .ct-sale-total > .ct-button { width: 100%; margin-top: 12px; min-height: 42px; }
+.ct-owner.ct-refresh-page .ct-report-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; padding: 14px 18px; }
+.ct-owner.ct-refresh-page .ct-report-toolbar .ct-field { width: 200px; max-width: 100%; margin: 0; }
+.ct-owner.ct-refresh-page .ct-report-toolbar .ct-actions { flex: 1; }
+.ct-owner.ct-refresh-page .ct-report-toolbar .ct-actions a { margin-left: auto; }
+.ct-owner.ct-refresh-page .ct-report-summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px; }
+.ct-owner.ct-refresh-page .ct-report-summary > div:first-child { flex: 0 1 320px; min-width: 0; }
+.ct-owner.ct-refresh-page .ct-report-summary .ct-number { margin: 0; }
+.ct-owner.ct-refresh-page .ct-report-period { padding-left: 24px; border-left: 1px solid var(--ct-border); }
+.ct-owner.ct-refresh-page .ct-report-period h2 { margin: 0; }
+.ct-owner.ct-refresh-page .ct-report-period p { margin: 4px 0 0; color: var(--ct-muted); font-size: 12px; }
+.ct-owner.ct-refresh-page .ct-transaction-total { font-weight: 650; }
+.ct-owner.ct-refresh-page .ct-empty-icon { display: grid; place-items: center; width: 40px; height: 40px; margin: 0 auto 12px; border-radius: 10px; background: #eef4f0; color: #61806c; }
+.ct-owner.ct-refresh-page .ct-empty-icon svg { width: 22px; height: 22px; }
+.ct-owner.ct-refresh-page .ct-activity-table > h2 { margin: 0; }
+.ct-owner.ct-refresh-page .ct-activity-table table { min-width: 860px; table-layout: fixed; }
+.ct-owner.ct-refresh-page .ct-activity-table th:first-child { width: 26%; }
+.ct-owner.ct-refresh-page .ct-activity-table th:nth-child(2) { width: 19%; }
+.ct-owner.ct-refresh-page .ct-activity-table th:nth-child(3), .ct-owner.ct-refresh-page .ct-activity-table th:nth-child(4) { width: 17%; }
+.ct-owner.ct-refresh-page .ct-activity-table td { vertical-align: top; padding-block: 16px; }
+.ct-owner.ct-refresh-page .ct-event { display: flex; gap: 9px; }
+.ct-owner.ct-refresh-page .ct-event > div { min-width: 0; }
+.ct-owner.ct-refresh-page .ct-event-icon { flex: 0 0 26px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: #eef4f0; color: #52755f; }
+.ct-owner.ct-refresh-page .ct-event-icon svg { width: 15px; height: 15px; }
+.ct-owner.ct-refresh-page .ct-activity-person { font-weight: 600; }
+.ct-owner.ct-refresh-page .ct-values dt { font-size: 10px; color: var(--ct-muted); font-weight: 500; }
+.ct-owner.ct-refresh-page .ct-values dd { margin: 2px 0 9px; font-variant-numeric: tabular-nums; }
+.ct-owner.ct-refresh-page .ct-values dd:last-child { margin-bottom: 0; }
+.ct-owner.ct-refresh-page .ct-new-value .ct-values dd { font-weight: 600; color: #295d40; }
+.ct-owner.ct-refresh-page .ct-activity-reason { color: #526459; }
+.ct-owner.ct-refresh-page .ct-technical-details { color: var(--ct-muted); font-size: 12px; box-shadow: none; }
+.ct-owner.ct-refresh-page .ct-technical-details > summary { font-weight: 500; }
+.ct-owner.ct-refresh-page .ct-technical-details[open] > summary { padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--ct-border); }
+.ct-owner.ct-refresh-page .ct-technical-details details { padding: 10px 0; border-top: 1px solid var(--ct-border); }
+.ct-owner.ct-refresh-page .ct-technical-details .ct-code { padding: 12px; background: #f4f7f5; border-radius: 6px; }
 @media (max-width: 1050px) {
     .ct-owner { padding-left: 200px; }
     .ct-owner .ct-sidebar { width: 200px; padding-inline: 10px; }
@@ -195,6 +244,8 @@ select:focus[data-flux-control] {
     .ct-owner .ct-topbar { padding-inline: 20px; }
     .ct-owner.ct-refresh-page .ct-table th, .ct-owner.ct-refresh-page .ct-table td { padding-inline: 12px; }
     .ct-owner.ct-refresh-page .ct-table-actions { align-items: flex-start; flex-direction: column; gap: 6px; }
+    .ct-owner.ct-refresh-page .ct-sale-workspace { grid-template-columns: minmax(0, 1fr); }
+    .ct-owner.ct-refresh-page .ct-sale-total { border-left: 0; border-top: 1px solid var(--ct-border); border-radius: 0 0 10px 10px; }
 }
 @media (max-width: 760px) {
     .ct-owner { padding-left: 0; }
@@ -227,6 +278,14 @@ select:focus[data-flux-control] {
     .ct-owner.ct-refresh-page .ct-search .ct-field { max-width: none; flex-basis: 100%; }
     .ct-owner.ct-refresh-page .ct-form-section { padding: 16px; }
     .ct-owner.ct-refresh-page .ct-form-section .ct-grid { grid-template-columns: 1fr; }
+    .ct-owner.ct-refresh-page .ct-sale-items .ct-row { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+    .ct-owner.ct-refresh-page .ct-sale-items [data-existing] { grid-column: 1 / -1; }
+    .ct-owner.ct-refresh-page .ct-sale-items [data-remove] { align-self: end; margin: 0; }
+    .ct-owner.ct-refresh-page .ct-report-toolbar .ct-field { width: 100%; }
+    .ct-owner.ct-refresh-page .ct-report-toolbar .ct-actions a { margin-left: 0; }
+    .ct-owner.ct-refresh-page .ct-report-summary { align-items: stretch; flex-direction: column; }
+    .ct-owner.ct-refresh-page .ct-report-summary > div:first-child { flex-basis: auto; }
+    .ct-owner.ct-refresh-page .ct-report-period { padding: 14px 0 0; border-left: 0; border-top: 1px solid var(--ct-border); }
 }
 @media print {
     .ct-skip-link, .ct-owner .ct-sidebar, .ct-owner .ct-topbar, .ct-owner.ct-refresh-page .ct-quick-actions, .ct-owner.ct-refresh-page .ct-page-heading > .ct-button { display: none !important; }
@@ -234,4 +293,6 @@ select:focus[data-flux-control] {
     .ct-owner main.ct-wrap { padding: 0; max-width: none; }
     .ct-owner.ct-refresh-page .ct-panel { box-shadow: none; border: 0; }
     .ct-owner.ct-refresh-page .ct-metrics { grid-template-columns: repeat(3, 1fr); }
+    .ct-owner.ct-refresh-page .ct-table { overflow: visible; }
+    .ct-owner.ct-refresh-page .ct-activity-table table { min-width: 0; }
 }

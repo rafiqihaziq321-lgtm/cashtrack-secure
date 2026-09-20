@@ -1,13 +1,13 @@
 @extends('layouts.planb')
 @section('title', 'Activity History')
 @section('content')
-<h1>Activity History</h1>
-<p>See what changed, who recorded it and when.</p>
+<div class="ct-page-heading"><div><h1>Activity History</h1>
+<p class="ct-muted">See what changed, who recorded it and when.</p></div></div>
 @if($verification['status'] !== 'LULUS')
     <div class="ct-alert ct-error" role="alert">Some stock history could not be verified. Review Technical details before relying on these records.</div>
 @endif
-<section class="ct-panel ct-table"><h2>Recent Activity</h2>
-<table><thead><tr><th>What Happened / Item</th><th>Who / Date</th><th>Previous Value</th><th>New Value</th><th>Reason</th></tr></thead><tbody>
+<section class="ct-panel ct-table-panel ct-table ct-activity-table" aria-label="Recent activity" tabindex="0"><h2 class="ct-section-heading">Recent Activity</h2>
+<table><thead><tr><th scope="col">What Happened / Item</th><th scope="col">Who / Date</th><th scope="col">Previous Value</th><th scope="col"><span aria-hidden="true">→ </span>New Value</th><th scope="col">Reason</th></tr></thead><tbody>
 @forelse($activities as $activity)
     @php
         $before = json_decode($activity->before_values ?? '[]', true) ?? [];
@@ -24,11 +24,11 @@
         $reason = $after['note'] ?? $after['notes'] ?? null;
     @endphp
     <tr>
-        <td><strong>{{ $actionLabels[$activity->action] ?? 'Activity recorded' }}</strong><br>@include('planb.message', ['message' => $itemName ?: 'Account activity'])</td>
-        <td>{{ $activity->name ?? 'System' }}<br><small>{{ \Carbon\CarbonImmutable::parse($activity->created_at, 'UTC')->timezone('Asia/Kuala_Lumpur')->format('d M Y, g:i a') }}</small></td>
-        <td>@include('planb.activity-values', ['values' => $before])</td>
-        <td>@include('planb.activity-values', ['values' => $after])</td>
-        <td>
+        <td><div class="ct-event"><span class="ct-event-icon"><flux:icon.clock /></span><div><strong class="ct-item-name">{{ $actionLabels[$activity->action] ?? 'Activity recorded' }}</strong><span class="ct-item-meta">@include('planb.message', ['message' => $itemName ?: 'Account activity'])</span></div></div></td>
+        <td><span class="ct-activity-person">{{ $activity->name ?? 'System' }}</span><span class="ct-item-meta">{{ \Carbon\CarbonImmutable::parse($activity->created_at, 'UTC')->timezone('Asia/Kuala_Lumpur')->format('d M Y, g:i a') }}</span></td>
+        <td class="ct-previous-value">@include('planb.activity-values', ['values' => $before])</td>
+        <td class="ct-new-value">@include('planb.activity-values', ['values' => $after])</td>
+        <td class="ct-activity-reason">
             @if(isset($after['reason']))
                 {{ ['DAMAGED' => 'Damaged', 'EXPIRED' => 'Expired', 'SAMPLE' => 'Sample', 'OWN_USE' => 'Own Use'][$after['reason']] ?? 'Stock removal' }}<br>
             @endif
@@ -36,14 +36,14 @@
         </td>
     </tr>
 @empty
-    <tr><td colspan="5">No activity recorded yet.</td></tr>
+    <tr><td colspan="5"><div class="ct-empty"><span class="ct-empty-icon"><flux:icon.clock /></span><strong>No activity recorded yet.</strong><p>Item, stock and account changes will appear here.</p></div></td></tr>
 @endforelse
-</tbody></table>{{ $activities->links() }}</section>
-<section class="ct-panel"><h2>Stock Movement History</h2>
+</tbody></table><div class="ct-pagination">{{ $activities->links() }}</div></section>
+<section class="ct-panel ct-table-panel ct-movement-history"><div class="ct-section-heading"><h2>Stock Movement History</h2><p class="ct-muted">Recorded stock before and after each movement.</p></div>
 @include('planb.ledger')
-{{ $movements->links() }}
+<div class="ct-pagination">{{ $movements->links() }}</div>
 </section>
-<details class="ct-panel">
+<details class="ct-panel ct-technical-details">
     <summary>Technical details</summary>
     <h2>Stock history verification</h2>
     <p>{{ ['LULUS' => 'Passed', 'GAGAL' => 'Failed', 'TIDAK LENGKAP' => 'Incomplete'][$verification['status']] ?? 'Unknown' }} · {{ $verification['checked'] }} records checked · {{ $verification['legacy'] }} older records · {{ $verification['unsigned'] }} unsigned records.</p>
