@@ -136,7 +136,34 @@ test('inventory groups all stock workflows and receiving keeps new item fields i
         ->toBe(['Unit', 'Piece', 'Pack', 'Box', 'Slice']);
     expect($document->query('//form[@id="batch-form"]')->item(0)->getAttribute('action'))
         ->toBe(route('owner.stock-in.store'));
+    $purposes = $document->query('//select[@name="purpose"]/option');
+    expect(array_map(fn (DOMElement $option): string => $option->getAttribute('value'), iterator_to_array($purposes)))
+        ->toBe(['STOCK_IN', 'OPENING']);
+    expect(array_map(fn (DOMNode $option): string => trim($option->textContent), iterator_to_array($purposes)))
+        ->toBe(['Supplier Delivery', 'Opening Stock — initial quantity already on hand']);
+    $response->assertSee('Supplier Delivery: the supplier sends stock to the store for restocking.')
+        ->assertSee('Opening Stock: the first quantity already on hand when introducing an item to CashTrack, used to establish its starting balance.')
+        ->assertDontSee('Self Pickup');
 });
+
+test('receiving terminology stays consistent on receipts activity and guidance', function (string $purpose, string $label) {
+    $owner = ownerUiUser();
+    $this->actingAs($owner);
+    $receipt = app(InventoryService::class)->receive($owner, [
+        'submission_key' => (string) Str::uuid(), 'purpose' => $purpose,
+        'items' => [['name' => 'Oat Bun', 'unit' => 'biji', 'selling_price' => '2.50', 'reorder_level' => 5, 'quantity' => 10]],
+    ]);
+    $storedMovements = InventoryMovement::orderBy('id')->get()->toJson();
+    $storedActivities = DB::table('activity_logs')->orderBy('id')->get()->toJson();
+
+    $this->get(route('owner.receipts.show', $receipt))->assertOk()->assertSee($label);
+    $this->get(route('owner.audit.index'))->assertOk()->assertSee($label);
+    $this->view('planb.message', ['message' => 'Stok permulaan hanya untuk barang tanpa sejarah pergerakan. Gunakan penerimaan biasa.'])
+        ->assertSee('This item already has stock history. Choose Supplier Delivery instead of Opening Stock.');
+
+    expect(InventoryMovement::orderBy('id')->get()->toJson())->toBe($storedMovements);
+    expect(DB::table('activity_logs')->orderBy('id')->get()->toJson())->toBe($storedActivities);
+})->with([['STOCK_IN', 'Supplier Delivery'], ['OPENING', 'Opening Stock']]);
 
 test('standalone item creation guides the owner into receiving', function () {
     $this->actingAs(ownerUiUser());

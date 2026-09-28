@@ -22,7 +22,7 @@
                 @elseif($field === 'unit')
                     @include('planb.unit', ['unit' => $value])
                 @elseif($field === 'purpose')
-                    {{ ['OPENING' => 'Opening Stock', 'STOCK_IN' => 'Delivery'][$value] ?? 'Receiving' }}
+                    {{ ['OPENING' => 'Opening Stock', 'STOCK_IN' => 'Supplier Delivery'][$value] ?? 'Receiving' }}
                 @elseif($field === 'status')
                     {{ ['OPEN' => 'Needs Review', 'REVIEWING' => 'Under Review', 'RESOLVED' => 'Resolved', 'MATCH' => 'Matches', 'SHORTAGE' => 'Shortage', 'SURPLUS' => 'Surplus', 'completed' => 'Completed'][$value] ?? 'Recorded' }}
                 @elseif($field === 'name')

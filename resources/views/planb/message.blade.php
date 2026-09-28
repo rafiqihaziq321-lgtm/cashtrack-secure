@@ -12,7 +12,7 @@
         'Unit tidak boleh diubah selepas pergerakan stok. Daftar barang lain untuk unit baharu.' => 'The unit cannot change after stock has been recorded. Add a new item for a different unit.',
         'Stok tidak mencukupi atau melebihi had: ' => 'Not enough stock, or the quantity exceeds the limit: ',
         'Gabungkan kuantiti barang yang sama dalam satu baris.' => 'Combine quantities for the same item into one row.',
-        'Stok permulaan hanya untuk barang tanpa sejarah pergerakan. Gunakan penerimaan biasa.' => 'This item already has stock history. Choose Delivery instead of Opening Stock.',
+        'Stok permulaan hanya untuk barang tanpa sejarah pergerakan. Gunakan penerimaan biasa.' => 'This item already has stock history. Choose Supplier Delivery instead of Opening Stock.',
         'Barang dihentikan tidak boleh dijual: ' => 'This item is unavailable for sale: ',
         'Jumlah jualan melebihi had RM99,999,999.99.' => 'The sale total exceeds RM99,999,999.99.',
         'Borang kiraan tidak sah. Buka semula borang.' => 'Please start a new stock check.',
