@@ -41,7 +41,7 @@ test('refreshed owner dashboard presents existing totals stock issues and quick 
 
     $response = $this->get(route('owner.dashboard'));
 
-    $response->assertOk()->assertSee('1 transaction today')->assertSee('Oat Bun');
+    $response->assertOk()->assertSee('1 transaction today')->assertSee('Oat Bun')->assertDontSee('No sales recorded yet today.');
     $document = ownerUiDocument($response->getContent());
     expect(trim($document->query('//section[@aria-labelledby="sales-heading"]/p[1]')->item(0)->textContent))->toBe('RM 2.50');
     expect(trim($document->query('//section[@aria-labelledby="low-stock-heading"]/p[1]')->item(0)->textContent))->toBe('1');
@@ -80,7 +80,10 @@ test('refreshed inventory keeps search item values availability and edit destina
 test('refreshed owner pages explain empty inventory search and restock states', function () {
     $this->actingAs(ownerUiUser());
 
-    $this->get(route('owner.dashboard'))->assertSee('No items are running low.');
+    $this->get(route('owner.dashboard'))->assertSee('No items are running low.')
+        ->assertSee('No sales recorded yet today.')->assertSee('No stock issues need review.');
+    $this->get(route('owner.alerts.index'))->assertSee('No stock issues to review.');
+    $this->get(route('owner.audit.index'))->assertSee('No activity recorded yet.');
     $this->get(route('owner.products.index'))->assertSee('Your inventory is ready for its first item.')
         ->assertSee('Use Receive Stock to add item details and the received quantity together.');
     $this->get(route('owner.products.index', ['q' => 'Missing item']))->assertSee('No items match “Missing item”.')
@@ -291,6 +294,72 @@ test('owner sees friendly stock errors and saved messages without changing valid
         ->assertSee('Stock received successfully.')->assertDontSee('Stok tidak')->assertDontSee('Semua item');
 });
 
+test('feedback remains available to reopen and validation errors stay visible', function () {
+    $this->actingAs(ownerUiUser())->withSession(['success' => 'Semua item penerimaan disimpan bersama.', 'status' => '<script>unsafe</script>']);
+
+    $response = $this->withViewErrors(['items' => 'Select an item before saving.'])->view('layouts.planb');
+
+    $response->assertSee('Stock received successfully.')->assertSee('Select an item before saving.')
+        ->assertSee('<script>unsafe</script>')->assertDontSee('<script>unsafe</script>', false);
+    $document = ownerUiDocument((string) $response);
+    expect($document->query('//details[@class="ct-feedback" and @open]')->length)->toBe(2);
+    expect($document->query('//details[@class="ct-feedback"]//p[@role="status" and @aria-live="polite"]')->length)->toBe(2);
+    expect($document->query('//details[@class="ct-feedback"]/summary')->item(0)->textContent)->toContain('View message');
+    expect($document->query('//div[@role="alert"]')->item(0)->hasAttribute('x-data'))->toBeFalse();
+});
+
+test('sale completion confirmation comes only from the successful sale response', function () {
+    $owner = ownerUiUser();
+    $this->actingAs($owner);
+    $inventory = app(InventoryService::class);
+    $inventory->receive($owner, ['submission_key' => (string) Str::uuid(), 'purpose' => 'STOCK_IN', 'items' => [
+        ['name' => 'Oat Bun', 'unit' => 'biji', 'selling_price' => '2.50', 'reorder_level' => 2, 'quantity' => 5],
+    ]]);
+    $product = Product::firstOrFail();
+    $payload = ['submission_key' => (string) Str::uuid(), 'items' => [['product_id' => $product->id, 'quantity' => 2]]];
+
+    $this->post(route('cashier.sales.store'), $payload)->assertSessionHasNoErrors();
+
+    $sale = Sale::firstOrFail();
+    $this->get(route('sales.show', $sale))->assertSee('Sale completed successfully.')->assertSee('ct-sale-confirmation')->assertSee('RM 5.00');
+    $this->get(route('sales.show', $sale))->assertDontSee('Sale completed successfully.');
+    expect($inventory->balance($product->id))->toBe(3);
+    $this->from(route('cashier.sales.create'))->post(route('cashier.sales.store'), ['submission_key' => (string) Str::uuid(), 'items' => [['product_id' => $product->id, 'quantity' => 4]]])
+        ->assertSessionHasErrors('items')->assertSessionMissing('success');
+    $this->get(route('cashier.sales.create'))->assertDontSee('Sale completed successfully.');
+});
+
+test('resolved issue explains unchanged stock only when closed without adjustment', function (string $action) {
+    $owner = ownerUiUser();
+    $this->actingAs($owner);
+    $inventory = app(InventoryService::class);
+    $inventory->receive($owner, ['submission_key' => (string) Str::uuid(), 'purpose' => 'STOCK_IN', 'items' => [
+        ['name' => 'Oat Bun', 'unit' => 'biji', 'selling_price' => '2.50', 'reorder_level' => 2, 'quantity' => 10],
+    ]]);
+    $product = Product::firstOrFail();
+    $inventory->count($owner, ['submission_key' => (string) Str::uuid(), 'product_id' => $product->id, 'physical_quantity' => 9, 'count_token' => $inventory->countToken($owner, $product->id)]);
+    $alert = DiscrepancyAlert::firstOrFail();
+    $originalCount = $alert->stockCount->getAttributes();
+    $originalHashes = InventoryMovement::orderBy('id')->pluck('record_hash', 'id')->all();
+
+    $this->post(route('owner.alerts.review', $alert), ['submission_key' => (string) Str::uuid(), 'action' => $action, 'note' => 'Checked shelf and delivery records'])->assertSessionHasNoErrors();
+
+    $response = $this->get(route('owner.alerts.show', $alert))->assertSee('Resolved')->assertSee('Recheck Stock')->assertSee('Stock issue review saved.');
+    $explanation = 'Issue closed. Recorded stock was not changed. Recheck the item to confirm the current physical quantity.';
+    if ($action === 'close') {
+        $response->assertSee($explanation);
+    } else {
+        $response->assertDontSee($explanation)->assertSee('Stock adjusted');
+    }
+    expect($inventory->balance($product->id))->toBe($action === 'close' ? 10 : 9);
+    expect($alert->stockCount->fresh()->getAttributes())->toBe($originalCount);
+    expect(InventoryMovement::whereIn('id', array_keys($originalHashes))->orderBy('id')->pluck('record_hash', 'id')->all())->toBe($originalHashes);
+    $this->assertDatabaseHas('alert_notes', ['alert_id' => $alert->id, 'action' => $action, 'note' => 'Checked shelf and delivery records']);
+    $document = ownerUiDocument($response->getContent());
+    $recheck = route('owner.stock-counts.create', ['product_id' => $product->id, 'recount_of' => $alert->stock_count_id]);
+    expect($document->query('//a[@href="'.$recheck.'"]')->length)->toBe(1);
+})->with(['close', 'adjust']);
+
 test('report renders business labels and keeps export and print controls', function () {
     $this->actingAs(ownerUiUser());
 
@@ -489,7 +558,7 @@ test('inventory redesign keeps count removal editing and review form contracts',
             expect($document->query($form.'//*[@name="'.$field.'"]')->length)->toBe(1);
         }
     }
-    $this->get(route('owner.stock-counts.index'))->assertSee('Oat Bun')->assertSee('Shelf count')->assertSee('Shortage')->assertSee('Count Again');
+    $this->get(route('owner.stock-counts.index'))->assertSee('Oat Bun')->assertSee('Shelf count')->assertSee('Shortage')->assertSee('Recheck Stock');
     $this->get(route('owner.alerts.index'))->assertSee('Oat Bun')->assertSee('Needs Review')->assertSee(route('owner.alerts.show', $alert));
 });
 

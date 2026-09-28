@@ -17,7 +17,7 @@
                 <td class="ct-numeric">{{ $count->expected_quantity }}</td>
                 <td class="ct-numeric"><strong>{{ $count->physical_quantity }}</strong></td>
                 <td class="ct-numeric">{{ $count->discrepancy_quantity > 0 ? '+' : '' }}{{ $count->discrepancy_quantity }}<br><span class="ct-badge {{ $count->status === 'MATCH' ? 'ct-badge-success' : 'ct-badge-warning' }}">{{ ['MATCH'=>'Matches','SHORTAGE'=>'Shortage','SURPLUS'=>'Surplus'][$count->status] ?? $count->status }}</span></td>
-                <td><a class="ct-button ct-secondary" href="{{ route('owner.stock-counts.create', ['product_id'=>$count->product_id,'recount_of'=>$count->id]) }}">Count Again</a></td>
+                <td><a class="ct-button ct-secondary" href="{{ route('owner.stock-counts.create', ['product_id'=>$count->product_id,'recount_of'=>$count->id]) }}">Recheck Stock</a></td>
             </tr>
         @empty
             <tr><td colspan="6"><div class="ct-empty"><strong>No stock checks yet.</strong><p>Start a stock check to compare your records with a physical count.</p></div></td></tr>

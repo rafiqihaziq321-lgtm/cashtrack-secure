@@ -49,15 +49,14 @@
 @endauth</div></header>
 @endif
 <main id="main-content" class="ct-wrap" tabindex="-1">
-    @if(session('success'))<div role="status" class="ct-alert">@include('planb.message', ['message' => session('success')])</div>@endif
-    @if(session('status'))<div role="status" class="ct-alert">@include('planb.message', ['message' => session('status')])</div>@endif
-    @if($errors->any())<div role="alert" class="ct-alert ct-error"><strong>Please check the following before saving:</strong><ul>@foreach($errors->all() as $error)<li>@include('planb.message', ['message' => $error])</li>@endforeach</ul></div>@endif
+    @include('planb.feedback')
+    @if($errors->any())<div role="alert" class="ct-alert ct-error ct-feedback-error"><strong>Please check the following before saving:</strong><ul>@foreach($errors->all() as $error)<li>@include('planb.message', ['message' => $error])</li>@endforeach</ul></div>@endif
     @auth
         @if(auth()->user()->role?->name === 'Owner' && request()->routeIs('owner.products.*', 'owner.stock-in.*', 'owner.receipts.*', 'owner.stock-counts.*', 'owner.alerts.*', 'withdrawals.*'))
             @include('planb.inventory-nav')
         @endif
     @endauth
-    @yield('content')
+    <div class="ct-page-content">@yield('content')</div>
     <footer class="ct-muted ct-footer" style="margin-top:36px;border-top:1px solid #dbe3e6;padding-top:15px">CashTrack Secure</footer>
 </main>
 @stack('scripts')

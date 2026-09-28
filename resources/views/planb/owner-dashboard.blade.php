@@ -8,6 +8,7 @@
         <div class="ct-metric-heading"><h2 id="sales-heading">Today's Sales</h2><span class="ct-metric-icon"><flux:icon.banknotes /></span></div>
         <p class="ct-number"><span class="ct-currency">RM</span> {{ number_format((float) $total, 2) }}</p>
         <p class="ct-muted">{{ $transactions }} {{ $transactions === 1 ? 'transaction' : 'transactions' }} today</p>
+        @if($transactions === 0)<p class="ct-muted ct-metric-help">No sales recorded yet today.</p>@endif
     </section>
     <section class="ct-panel ct-metric" aria-labelledby="low-stock-heading">
         <div class="ct-metric-heading"><h2 id="low-stock-heading">Low Stock Items</h2><span class="ct-metric-icon ct-icon-warning"><flux:icon.cube /></span></div>
@@ -17,6 +18,7 @@
     <section class="ct-panel ct-metric" aria-labelledby="issues-heading">
         <div class="ct-metric-heading"><h2 id="issues-heading">Stock Issues</h2><span class="ct-metric-icon ct-icon-warning"><flux:icon.exclamation-triangle /></span></div>
         <p class="ct-number">{{ $alerts }}</p>
+        @if($alerts === 0)<p class="ct-muted ct-metric-help">No stock issues need review.</p>@endif
         <a class="ct-text-action" href="{{ route('owner.alerts.index') }}">Review stock issues <span aria-hidden="true">→</span></a>
     </section>
 </div>

@@ -9,7 +9,7 @@
     <div class="ct-panel"><h2>Difference</h2><p class="ct-number">{{ $alert->discrepancy_quantity }} @include('planb.unit', ['unit' => $alert->product->unit])</p></div>
 </div>
 <p>Current recorded stock: <strong>{{ $balance }} @include('planb.unit', ['unit' => $alert->product->unit])</strong>. Count notes: {{ $alert->stockCount->notes ?: 'No notes' }}</p>
-<a class="ct-button ct-secondary" href="{{ route('owner.stock-counts.create', ['product_id' => $alert->product_id, 'recount_of' => $alert->stock_count_id]) }}">Count Again</a>
+<a class="ct-button ct-secondary" href="{{ route('owner.stock-counts.create', ['product_id' => $alert->product_id, 'recount_of' => $alert->stock_count_id]) }}"><flux:icon.clipboard-document-check />Recheck Stock</a>
 @if($alert->status !== 'RESOLVED')
     <form class="ct-panel ct-form-panel" method="post" action="{{ route('owner.alerts.review', $alert) }}">
         @csrf
@@ -25,6 +25,7 @@
     </form>
 @else
     <div class="ct-alert">Resolved: {{ $alert->resolution }} · {{ $alert->adjustment_id ? 'Stock adjusted' : 'Stock unchanged' }}</div>
+    @if(!$alert->adjustment_id)<p class="ct-resolution-help">Issue closed. Recorded stock was not changed. Recheck the item to confirm the current physical quantity.</p>@endif
 @endif
 <section class="ct-panel"><h2>Review History</h2>
     @forelse($notes as $note)
