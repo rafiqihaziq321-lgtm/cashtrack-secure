@@ -214,6 +214,21 @@ select:focus[data-flux-control] {
 .ct-workspace.ct-refresh-page .ct-report-period { padding-left: 24px; border-left: 1px solid var(--ct-border); }
 .ct-workspace.ct-refresh-page .ct-report-period h2 { margin: 0; }
 .ct-workspace.ct-refresh-page .ct-report-period p { margin: 4px 0 0; color: var(--ct-muted); font-size: 12px; }
+.ct-workspace.ct-refresh-page .ct-report-switch { display: flex; gap: 6px; }
+.ct-workspace.ct-refresh-page .ct-sales-chart { padding: 0; overflow: hidden; }
+.ct-workspace.ct-refresh-page .ct-chart-scroll { overflow-x: auto; padding: 0 16px; }
+.ct-workspace.ct-refresh-page .ct-sales-chart svg { display: block; width: 100%; min-width: 600px; height: auto; }
+.ct-workspace.ct-refresh-page .ct-sales-chart svg text { fill: #526459; font: 12px ui-sans-serif, system-ui, sans-serif; }
+.ct-workspace.ct-refresh-page .ct-chart-grid { stroke: var(--ct-border); stroke-width: 1; }
+.ct-workspace.ct-refresh-page .ct-chart-bar { fill: #28734f; }
+.ct-workspace.ct-refresh-page .ct-chart-values { padding: 12px 18px; border-top: 1px solid var(--ct-border); }
+.ct-workspace.ct-refresh-page .ct-chart-values summary { cursor: pointer; color: #285e44; font-weight: 600; }
+.ct-workspace.ct-refresh-page .ct-activity-search { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
+.ct-workspace.ct-refresh-page .ct-activity-search .ct-field { flex: 1 1 260px; }
+.ct-workspace.ct-refresh-page .ct-activity-search > a { align-self: center; }
+.ct-workspace.ct-refresh-page .ct-activity-filter-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 12px; margin-top: 12px; }
+.ct-workspace.ct-refresh-page .ct-activity-filters .ct-field { margin: 0; min-width: 0; }
+.ct-workspace.ct-refresh-page .ct-activity-filters > p { margin: 12px 0 0; font-size: 12px; }
 .ct-workspace.ct-refresh-page .ct-transaction-total { font-weight: 650; }
 .ct-workspace.ct-refresh-page .ct-empty-icon { display: grid; place-items: center; width: 40px; height: 40px; margin: 0 auto 12px; border-radius: 10px; background: #eef4f0; color: #61806c; }
 .ct-workspace.ct-refresh-page .ct-empty-icon svg { width: 22px; height: 22px; }

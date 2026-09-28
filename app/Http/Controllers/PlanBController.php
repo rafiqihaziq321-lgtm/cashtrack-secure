@@ -11,10 +11,12 @@ use App\Models\User;
 use App\Services\InventoryService;
 use App\Services\LedgerIntegrity;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -159,13 +161,25 @@ class PlanBController extends Controller
         return redirect()->route('owner.alerts.show', $alert)->with('success', 'Tindakan semakan disimpan.');
     }
 
-    public function audit(LedgerIntegrity $integrity): View
+    public function audit(Request $request, LedgerIntegrity $integrity): View
     {
-        $activities = DB::table('activity_logs')->leftJoin('users', 'users.id', '=', 'activity_logs.user_id')
-            ->orderByDesc('activity_logs.id')->select('activity_logs.*', 'users.name')->paginate(30, ['*'], 'activity_page');
-        $movements = InventoryMovement::with(['product', 'user'])->latest('id')->paginate(30, ['*'], 'ledger_page');
-
-        $activityItems = [];
+        $actionLabels = [
+            'owner.dipasang' => 'Owner account created', 'akaun.log_masuk' => 'Signed in', 'akaun.log_keluar' => 'Signed out',
+            'akaun.dicipta' => 'Staff member added', 'akaun.dikemas_kini' => 'Staff details updated', 'profil.dikemas_kini' => 'Profile updated',
+            'barang.didaftar' => 'Item registered', 'barang.dikemas_kini' => 'Item details updated', 'stok.diterima' => 'Stock received',
+            'jualan.direkod' => 'Sale recorded', 'stok.dikeluarkan' => 'Stock removed', 'stok.dikira' => 'Stock checked',
+            'perbezaan.note' => 'Stock issue note added', 'perbezaan.review' => 'Stock issue under review',
+            'perbezaan.close' => 'Stock issue closed', 'perbezaan.adjust' => 'Stock adjusted after review',
+        ];
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:200'],
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'action' => ['nullable', Rule::in(array_keys($actionLabels))],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', ...($request->filled('from') ? ['after_or_equal:from'] : [])],
+            'sort' => ['nullable', 'in:newest,oldest'],
+        ]);
+        $filters['q'] = trim($filters['q'] ?? '');
         $itemSources = [
             'product' => ['products', 'id', 'id'],
             'sale' => ['sale_items', 'sale_id', 'product_id'],
@@ -174,6 +188,56 @@ class PlanBController extends Controller
             'stock_count' => ['stock_counts', 'id', 'product_id'],
             'alert' => ['discrepancy_alerts', 'id', 'product_id'],
         ];
+        $query = DB::table('activity_logs')->leftJoin('users', 'users.id', '=', 'activity_logs.user_id');
+        if ($filters['q'] !== '') {
+            $term = $filters['q'];
+            $pattern = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+            $matchingActions = array_keys(array_filter($actionLabels, fn (string $label): bool => Str::contains(Str::lower($label), Str::lower($term))));
+            $query->where(function (Builder $search) use ($pattern, $matchingActions, $itemSources, $term): void {
+                $search->where('users.name', 'like', $pattern)->orWhereIn('activity_logs.action', $matchingActions);
+                foreach (['before_values', 'after_values'] as $values) {
+                    foreach (['name', 'note', 'notes', 'transaction_no', 'sku'] as $field) {
+                        $column = $search->getGrammar()->wrap('activity_logs.'.$values.'->'.$field);
+                        $search->orWhereRaw('LOWER('.$column.') LIKE ?', [Str::lower($pattern)]);
+                    }
+                }
+                foreach (['DAMAGED' => 'Damaged', 'EXPIRED' => 'Expired', 'SAMPLE' => 'Sample', 'OWN_USE' => 'Own Use'] as $reason => $label) {
+                    if (Str::contains(Str::lower($label), Str::lower($term))) {
+                        $search->orWhere('activity_logs.after_values->reason', $reason);
+                    }
+                }
+                foreach ($itemSources as $type => [$table, $referenceColumn, $productColumn]) {
+                    $search->orWhere(function (Builder $match) use ($type, $table, $referenceColumn, $productColumn, $pattern): void {
+                        $match->where('activity_logs.reference_type', $type)->whereExists(function (Builder $items) use ($type, $table, $referenceColumn, $productColumn, $pattern): void {
+                            $items->selectRaw('1')->from($table.' as source')
+                                ->join('products as item', 'item.id', '=', 'source.'.$productColumn)
+                                ->whereColumn('source.'.$referenceColumn, 'activity_logs.reference_id')
+                                ->when($type === 'receipt', fn (Builder $receipts) => $receipts->where('source.reference_type', 'receipt'))
+                                ->where('item.name', 'like', $pattern);
+                        });
+                    });
+                }
+            });
+        }
+        if (! empty($filters['user_id'])) {
+            $query->where('activity_logs.user_id', $filters['user_id']);
+        }
+        if (! empty($filters['action'])) {
+            $query->where('activity_logs.action', $filters['action']);
+        }
+        if (! empty($filters['from'])) {
+            $query->where('activity_logs.created_at', '>=', $this->period($filters['from'])[0]);
+        }
+        if (! empty($filters['to'])) {
+            $query->where('activity_logs.created_at', '<', $this->period($filters['to'])[1]);
+        }
+        $direction = ($filters['sort'] ?? 'newest') === 'oldest' ? 'asc' : 'desc';
+        $activities = $query->orderBy('activity_logs.created_at', $direction)->orderBy('activity_logs.id', $direction)
+            ->select('activity_logs.*', 'users.name')->paginate(30, ['*'], 'activity_page')->withQueryString();
+        $movements = InventoryMovement::with(['product', 'user'])->latest('id')->paginate(30, ['*'], 'ledger_page')->withQueryString();
+        $staff = User::orderBy('name')->get(['id', 'name']);
+        $hasFilters = collect($filters)->except('sort')->contains(fn ($value): bool => $value !== null && $value !== '');
+        $activityItems = [];
         foreach ($itemSources as $type => [$table, $referenceColumn, $productColumn]) {
             $referenceIds = $activities->getCollection()->where('reference_type', $type)->pluck('reference_id');
             if ($referenceIds->isEmpty()) {
@@ -189,7 +253,8 @@ class PlanBController extends Controller
             }
         }
 
-        return view('planb.audit', ['activities' => $activities, 'activityItems' => $activityItems, 'movements' => $movements, 'verification' => $integrity->verify()]);
+        return view('planb.audit', ['activities' => $activities, 'activityItems' => $activityItems, 'movements' => $movements,
+            'actionLabels' => $actionLabels, 'filters' => $filters, 'staff' => $staff, 'hasFilters' => $hasFilters, 'verification' => $integrity->verify()]);
     }
 
     /** @return array{CarbonImmutable,CarbonImmutable} */
@@ -202,28 +267,48 @@ class PlanBController extends Controller
 
     public function report(Request $request): View|StreamedResponse
     {
-        $data = $request->validate(['day' => ['nullable', 'date_format:Y-m-d'], 'format' => ['nullable', 'in:csv']]);
+        $data = $request->validate([
+            'view' => ['nullable', 'in:daily,monthly'], 'day' => ['nullable', 'date_format:Y-m-d'],
+            'month' => ['nullable', 'date_format:Y-m'], 'format' => ['nullable', 'in:csv'],
+        ]);
+        $reportView = $data['view'] ?? 'daily';
         $day = $data['day'] ?? CarbonImmutable::now('Asia/Kuala_Lumpur')->toDateString();
+        $month = $data['month'] ?? substr($day, 0, 7);
+        $monthStart = CarbonImmutable::parse($month.'-01', 'Asia/Kuala_Lumpur')->startOfDay();
         [$start, $end] = $this->period($day);
+        if ($reportView === 'monthly') {
+            [$start, $end] = [$monthStart->utc(), $monthStart->addMonth()->utc()];
+        }
         $sales = Sale::with('cashier')->where('status', 'completed')->where('created_at', '>=', $start)->where('created_at', '<', $end)->orderBy('id')->get();
         $totalCents = $sales->sum(fn (Sale $sale): int => InventoryService::cents($sale->total_amount));
         $total = InventoryService::money($totalCents);
         if (($data['format'] ?? '') === 'csv') {
-            return response()->streamDownload(function () use ($sales, $day, $total): void {
+            return response()->streamDownload(function () use ($sales, $total): void {
                 $stream = fopen('php://output', 'w');
                 fwrite($stream, "\xEF\xBB\xBF");
                 fputcsv($stream, ['Date', 'Transaction', 'Staff Member', 'Date / Time', 'Total (RM)'], ',', '"', '');
                 foreach ($sales as $sale) {
-                    $cells = [$day, $sale->transaction_no, $sale->cashier?->name ?? '', $sale->created_at->timezone('Asia/Kuala_Lumpur')->format('Y-m-d H:i:s'), $sale->total_amount];
+                    $cells = [$sale->created_at->timezone('Asia/Kuala_Lumpur')->toDateString(), $sale->transaction_no, $sale->cashier?->name ?? '', $sale->created_at->timezone('Asia/Kuala_Lumpur')->format('Y-m-d H:i:s'), $sale->total_amount];
                     $cells = array_map(fn ($value) => preg_match('/^[\s\x00-\x1f]*[=+@-]/u', (string) $value) ? "'".$value : $value, $cells);
                     fputcsv($stream, $cells, ',', '"', '');
                 }
                 fputcsv($stream, ['', '', '', 'Sales Total', $total], ',', '"', '');
                 fclose($stream);
-            }, 'jualan-'.$day.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+            }, 'jualan-'.($reportView === 'monthly' ? $month : $day).'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
         }
 
-        return view('planb.report', compact('day', 'sales', 'total'));
+        $average = InventoryService::money($sales->isEmpty() ? 0 : intdiv($totalCents + intdiv($sales->count(), 2), $sales->count()));
+        $dailyTotals = [];
+        if ($reportView === 'monthly') {
+            for ($date = $monthStart; $date->lt($monthStart->addMonth()); $date = $date->addDay()) {
+                $dailyTotals[$date->toDateString()] = 0;
+            }
+            foreach ($sales as $sale) {
+                $dailyTotals[$sale->created_at->timezone('Asia/Kuala_Lumpur')->toDateString()] += InventoryService::cents($sale->total_amount);
+            }
+        }
+
+        return view('planb.report', compact('day', 'month', 'reportView', 'sales', 'total', 'average', 'dailyTotals'));
     }
 
     public function users(): View

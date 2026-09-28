@@ -3,6 +3,21 @@
 @section('content')
 <div class="ct-page-heading"><div><h1>Activity History</h1>
 <p class="ct-muted">See what changed, who recorded it and when.</p></div></div>
+<form class="ct-panel ct-activity-filters" method="get" action="{{ route('owner.audit.index') }}" aria-label="Activity filters">
+    <div class="ct-activity-search">
+        <label class="ct-field">Search activity<input type="search" name="q" value="{{ $filters['q'] }}" maxlength="200" placeholder="Staff, item, activity, reason or transaction" aria-describedby="activity-filter-help"></label>
+        <button class="ct-button"><flux:icon.magnifying-glass />Search</button>
+        <a class="ct-text-action" href="{{ route('owner.audit.index') }}">Clear filters</a>
+    </div>
+    <div class="ct-activity-filter-fields">
+        <label class="ct-field">Staff / User<select name="user_id"><option value="">All staff</option>@foreach($staff as $member)<option value="{{ $member->id }}" @selected(($filters['user_id'] ?? '') == $member->id)>{{ $member->name }}</option>@endforeach</select></label>
+        <label class="ct-field">Activity Type<select name="action"><option value="">All activity</option>@foreach($actionLabels as $action => $label)<option value="{{ $action }}" @selected(($filters['action'] ?? '') === $action)>{{ $label }}</option>@endforeach</select></label>
+        <label class="ct-field">From<input type="date" name="from" value="{{ $filters['from'] ?? '' }}"></label>
+        <label class="ct-field">To<input type="date" name="to" value="{{ $filters['to'] ?? '' }}"></label>
+        <label class="ct-field">Sort<select name="sort"><option value="newest" @selected(($filters['sort'] ?? 'newest') === 'newest')>Newest first</option><option value="oldest" @selected(($filters['sort'] ?? '') === 'oldest')>Oldest first</option></select></label>
+    </div>
+    <p class="ct-muted" id="activity-filter-help">{{ $activities->total() }} {{ $activities->total() === 1 ? 'activity' : 'activities' }}{{ $hasFilters ? ' found' : ' recorded' }}. Filters apply to Recent Activity.</p>
+</form>
 @if($verification['status'] !== 'LULUS')
     <div class="ct-alert ct-error" role="alert">Some stock history could not be verified. Review Technical details before relying on these records.</div>
 @endif
@@ -12,14 +27,6 @@
     @php
         $before = json_decode($activity->before_values ?? '[]', true) ?? [];
         $after = json_decode($activity->after_values ?? '[]', true) ?? [];
-        $actionLabels = [
-            'owner.dipasang' => 'Owner account created', 'akaun.log_masuk' => 'Signed in', 'akaun.log_keluar' => 'Signed out',
-            'akaun.dicipta' => 'Staff member added', 'akaun.dikemas_kini' => 'Staff details updated', 'profil.dikemas_kini' => 'Profile updated',
-            'barang.didaftar' => 'Item registered', 'barang.dikemas_kini' => 'Item details updated', 'stok.diterima' => 'Stock received',
-            'jualan.direkod' => 'Sale recorded', 'stok.dikeluarkan' => 'Stock removed', 'stok.dikira' => 'Stock checked',
-            'perbezaan.note' => 'Stock issue note added', 'perbezaan.review' => 'Stock issue under review',
-            'perbezaan.close' => 'Stock issue closed', 'perbezaan.adjust' => 'Stock adjusted after review',
-        ];
         $itemName = $activityItems[$activity->reference_type][$activity->reference_id] ?? ($after['name'] ?? $before['name'] ?? null);
         $reason = $after['note'] ?? $after['notes'] ?? null;
     @endphp
@@ -36,10 +43,10 @@
         </td>
     </tr>
 @empty
-    <tr><td colspan="5"><div class="ct-empty"><span class="ct-empty-icon"><flux:icon.clock /></span><strong>No activity recorded yet.</strong><p>Item, stock and account changes will appear here.</p></div></td></tr>
+    <tr><td colspan="5"><div class="ct-empty"><span class="ct-empty-icon"><flux:icon.clock /></span><strong>{{ $hasFilters ? 'No activity matches your search.' : 'No activity recorded yet.' }}</strong><p>{{ $hasFilters ? 'Try another search or clear your filters.' : 'Item, stock and account changes will appear here.' }}</p>@if($hasFilters)<a class="ct-text-action" href="{{ route('owner.audit.index') }}">Clear filters</a>@endif</div></td></tr>
 @endforelse
 </tbody></table><div class="ct-pagination">{{ $activities->links() }}</div></section>
-<section class="ct-panel ct-table-panel ct-movement-history"><div class="ct-section-heading"><h2>Stock Movement History</h2><p class="ct-muted">Recorded stock before and after each movement.</p></div>
+<section class="ct-panel ct-table-panel ct-movement-history"><div class="ct-section-heading"><h2>Stock Movement History</h2><p class="ct-muted">Recorded stock before and after each movement. This history is not filtered by the activity search.</p></div>
 @include('planb.ledger')
 <div class="ct-pagination">{{ $movements->links() }}</div>
 </section>
