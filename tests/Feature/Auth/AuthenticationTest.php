@@ -6,11 +6,11 @@ use Laravel\Fortify\Features;
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
 
-    $response->assertOk()->assertDontSee('passkey', false)
+    $response->assertOk()->assertSee('Sign in with a passkey')
         ->assertSee('ct-auth-card')->assertSee('CashTrack Secure')->assertSee('name="remember"', false)
         ->assertSee(route('password.request'))
         ->assertSee('name="email"', false)->assertSee('name="password"', false)
-        ->assertSee('action="'.route('login.store').'"', false);
+        ->assertSee('action="' . route('login.store') . '"', false);
 });
 
 test('users can authenticate using the login screen', function () {

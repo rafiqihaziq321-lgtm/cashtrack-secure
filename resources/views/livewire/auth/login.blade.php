@@ -76,6 +76,19 @@
 
         </form>
 
+                </form>
+
+        {{-- Passkey Login --}}
+        <div class="relative flex items-center justify-center">
+            <div class="absolute inset-x-0 top-1/2 border-t border-zinc-200 dark:border-zinc-700"></div>
+
+            <span class="relative bg-white px-3 text-xs text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                {{ __('or') }}
+            </span>
+        </div>
+
+        <x-passkey-verify />
+
         <div class="text-center">
             <p class="text-xs text-zinc-500 dark:text-zinc-400">
                 Sign in to manage your sales and stock.
